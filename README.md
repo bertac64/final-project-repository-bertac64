@@ -1,3 +1,5 @@
-# final-project-repository-bertac64
+# Project: Shared memory driver for Microzed board
+
+## Final project of the course: Linux Embedded System Topics and Projects - Coursera
 ---
-Click the tab Projects to find the documentation related to this project 
+Project schedule: https://github.com/users/bertac64/projects/1
