@@ -1,4 +1,4 @@
-# Project: Shared memory driver for Microzed board
+# Project: MZSMD - Shared Memory Driver for Microzed Board
 
 ## Final project of the course: Linux Embedded System Topics and Projects - Coursera
 ---
