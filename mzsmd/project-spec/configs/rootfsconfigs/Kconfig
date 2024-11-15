@@ -8937,15 +8937,19 @@ config package-feed-uris
 
 	Ex: https://example.com/packagerepos/release https://example.com/packagerepos/updates
 
+	Note: Keep this option as empty will use the petalinux.xilinx.com as default in package-feed-uri.
+
 config package-feed-archs
 	string "package-feed-archs"
 	help
-	specifies the package architectures used as part of the package feed URIs during the bui	ld.The PACKAGE_FEED_ARCHS variable is appended to the final package feed URI.
+	specifies the package architectures used as part of the package feed URIs during the build.The PACKAGE_FEED_ARCHS variable is appended to the final package feed URI.
 	ex: package-feed-uris = "https://example.com/packagerepos/release"
 	package-feed-archs = "noarch arm zynq"
 	final uris:https://example.com/packagerepos/release/noarch
 		   https://example.com/packagerepos/release/arm
 		   https://example.com/packagerepos/release/zynq
+
+	Note: Keep this option as empty will set default generated archs based on the platform in package-feed-archs.
 
 endif
 
@@ -8981,7 +8985,7 @@ config Init-manager-sysvinit
 endchoice
 endmenu
 
-source /BertaBackup/work/Petalinux/Tenaci/project-spec/configs/rootfsconfigs/Kconfig.user
+source /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/rootfsconfigs/Kconfig.user
 
 menu "PetaLinux RootFS Settings"
 config ADD_EXTRA_USERS

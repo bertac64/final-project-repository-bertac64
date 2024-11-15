@@ -118,12 +118,12 @@ config SUBSYSTEM_MEMORY_PS7_DDR_0_BANKLESS_KERNEL_BASEADDR
 
 config SUBSYSTEM_MEMORY_PS7_DDR_0_BANKLESS_U__BOOT_TEXTBASE_OFFSET
 	hex "u-boot text base address offset to memory base address"
-	default 0x100000
+	default 0x8000000 if SUBSYSTEM_ARCH_AARCH64
+	default 0x4000000 if SUBSYSTEM_ARCH_ARM
+	default 0x100000 if SUBSYSTEM_ARCH_MICROBLAZE
 	range 0x100000 0x3e100000
 	depends on SUBSYSTEM_MEMORY_PS7_DDR_0_BANKLESS_SELECT
 	depends on !SUBSYSTEM_COMPONENT_U__BOOT_NAME_NONE
-	help
-	  u-boot offset to the memory base address. Minimum suggested is 1MB.
 
 
 
@@ -902,9 +902,6 @@ endmenu
 
 
 
-config SUBSYSTEM_I2C_PS7_I2C_0_SELECT
-	bool
-	default y
 
 
 config SUBSYSTEM_USB_PS7_USB_0_SELECT

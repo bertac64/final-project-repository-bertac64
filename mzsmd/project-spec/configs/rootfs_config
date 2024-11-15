@@ -26,14 +26,14 @@ CONFIG_system-zynq=y
 #
 # base-files 
 #
-CONFIG_base-files=y
+# CONFIG_base-files is not set
 # CONFIG_base-files-dbg is not set
 # CONFIG_base-files-dev is not set
 
 #
 # base-passwd 
 #
-CONFIG_base-passwd=y
+# CONFIG_base-passwd is not set
 # CONFIG_base-passwd-dev is not set
 # CONFIG_base-passwd-dbg is not set
 # CONFIG_base-passwd-update is not set
@@ -48,7 +48,7 @@ CONFIG_base-passwd=y
 #
 # busybox 
 #
-CONFIG_busybox=y
+# CONFIG_busybox is not set
 # CONFIG_busybox-udhcpd is not set
 # CONFIG_busybox-httpd is not set
 # CONFIG_busybox-dbg is not set
@@ -121,7 +121,7 @@ CONFIG_e2fsprogs-mke2fs=y
 #
 # ed 
 #
-CONFIG_ed=y
+# CONFIG_ed is not set
 # CONFIG_ed-dev is not set
 # CONFIG_ed-dbg is not set
 
@@ -164,7 +164,7 @@ CONFIG_fpga-manager-script=y
 #
 # init-ifupdown 
 #
-CONFIG_init-ifupdown=y
+# CONFIG_init-ifupdown is not set
 # CONFIG_init-ifupdown-dev is not set
 # CONFIG_init-ifupdown-dbg is not set
 
@@ -227,7 +227,7 @@ CONFIG_mtd-utils=y
 #
 # netbase 
 #
-CONFIG_netbase=y
+# CONFIG_netbase is not set
 # CONFIG_netbase-dbg is not set
 # CONFIG_netbase-dev is not set
 
@@ -290,7 +290,7 @@ CONFIG_netbase=y
 #
 # bash 
 #
-CONFIG_bash=y
+# CONFIG_bash is not set
 # CONFIG_bash-dev is not set
 # CONFIG_bash-dbg is not set
 
@@ -306,7 +306,7 @@ CONFIG_bash=y
 #
 # tar 
 #
-CONFIG_tar=y
+# CONFIG_tar is not set
 # CONFIG_tar-dev is not set
 # CONFIG_tar-rmt is not set
 # CONFIG_tar-dbg is not set
@@ -667,7 +667,7 @@ CONFIG_nfs-utils=y
 #
 # grep 
 #
-CONFIG_grep=y
+# CONFIG_grep is not set
 # CONFIG_grep-dbg is not set
 # CONFIG_grep-dev is not set
 
@@ -696,7 +696,7 @@ CONFIG_grep=y
 #
 # less 
 #
-CONFIG_less=y
+# CONFIG_less is not set
 # CONFIG_less-dev is not set
 # CONFIG_less-dbg is not set
 
@@ -3224,7 +3224,7 @@ CONFIG_tcf-agent=y
 #
 # bridge-utils 
 #
-# CONFIG_bridge-utils is not set
+CONFIG_bridge-utils=y
 # CONFIG_bridge-utils-dbg is not set
 # CONFIG_bridge-utils-dev is not set
 
@@ -3322,7 +3322,7 @@ CONFIG_tcf-agent=y
 #
 # dosfstools 
 #
-# CONFIG_dosfstools is not set
+CONFIG_dosfstools=y
 # CONFIG_dosfstools-dev is not set
 # CONFIG_dosfstools-dbg is not set
 
@@ -3838,15 +3838,13 @@ CONFIG_Init-manager-sysvinit=y
 #
 # user packages 
 #
-CONFIG_epcoredrv=y
-CONFIG_epxcore=y
 # CONFIG_gpio-demo is not set
 # CONFIG_peekpoke is not set
 
 #
 # PetaLinux RootFS Settings
 #
-CONFIG_ADD_EXTRA_USERS="root:!q2w3e4-r5;igea:!q2w3e4-r5"
+CONFIG_ADD_EXTRA_USERS="root:root;petalinux::passwd-expire;"
 CONFIG_CREATE_NEW_GROUPS="aie;"
-CONFIG_ADD_USERS_TO_GROUPS="igea:audio,video,aie,input;"
-CONFIG_ADD_USERS_TO_SUDOERS="igea"
+CONFIG_ADD_USERS_TO_GROUPS="petalinux:audio,video,aie,input;"
+CONFIG_ADD_USERS_TO_SUDOERS="petalinux"

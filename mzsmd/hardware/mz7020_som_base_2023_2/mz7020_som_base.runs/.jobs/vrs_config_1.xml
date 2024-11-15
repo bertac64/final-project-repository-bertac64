@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<Runs Version="1" Minor="0">
+	<Run Id="mz7020_som_base_clk_wiz_0_0_synth_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/mz7020_som_base_clk_wiz_0_0_synth_1" FlowId="Vivado_Synthesis" FromStepId="vivado" ToStepId="vivado"/>
+	<Run Id="mz7020_som_base_auto_pc_0_synth_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/mz7020_som_base_auto_pc_0_synth_1" FlowId="Vivado_Synthesis" FromStepId="vivado" ToStepId="vivado"/>
+	<Run Id="mz7020_som_base_axi_intc_0_0_synth_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/mz7020_som_base_axi_intc_0_0_synth_1" FlowId="Vivado_Synthesis" FromStepId="vivado" ToStepId="vivado"/>
+	<Run Id="mz7020_som_base_proc_sys_reset_50MHz_0_synth_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/mz7020_som_base_proc_sys_reset_50MHz_0_synth_1" FlowId="Vivado_Synthesis" FromStepId="vivado" ToStepId="vivado"/>
+	<Run Id="mz7020_som_base_proc_sys_reset_100MHz_0_synth_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/mz7020_som_base_proc_sys_reset_100MHz_0_synth_1" FlowId="Vivado_Synthesis" FromStepId="vivado" ToStepId="vivado"/>
+	<Run Id="mz7020_som_base_proc_sys_reset_166MHz_0_synth_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/mz7020_som_base_proc_sys_reset_166MHz_0_synth_1" FlowId="Vivado_Synthesis" FromStepId="vivado" ToStepId="vivado"/>
+	<Run Id="mz7020_som_base_proc_sys_reset_200MHz_0_synth_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/mz7020_som_base_proc_sys_reset_200MHz_0_synth_1" FlowId="Vivado_Synthesis" FromStepId="vivado" ToStepId="vivado"/>
+	<Run Id="mz7020_som_base_proc_sys_reset_142MHz_0_synth_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/mz7020_som_base_proc_sys_reset_142MHz_0_synth_1" FlowId="Vivado_Synthesis" FromStepId="vivado" ToStepId="vivado"/>
+	<Run Id="mz7020_som_base_proc_sys_reset_41MHz_0_synth_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/mz7020_som_base_proc_sys_reset_41MHz_0_synth_1" FlowId="Vivado_Synthesis" FromStepId="vivado" ToStepId="vivado"/>
+	<Run Id="mz7020_som_base_ps7_0_synth_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/mz7020_som_base_ps7_0_synth_1" FlowId="Vivado_Synthesis" FromStepId="vivado" ToStepId="vivado"/>
+	<Run Id="synth_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/synth_1" FlowId="Vivado_Synthesis" FromStepId="vivado" ToStepId="vivado">
+		<Parent Id="mz7020_som_base_clk_wiz_0_0_synth_1"/>
+		<Parent Id="mz7020_som_base_auto_pc_0_synth_1"/>
+		<Parent Id="mz7020_som_base_axi_intc_0_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_50MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_100MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_166MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_200MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_142MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_41MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_ps7_0_synth_1"/>
+	</Run>
+	<Run Id="impl_1" LaunchDir="/home/docker/repos/hdl/projects/mz7020_som_base_2023_2/mz7020_som_base.runs/impl_1" FlowId="Vivado_Implementation" FromStepId="init_design" ToStepId="write_bitstream">
+		<Parent Id="synth_1"/>
+		<Parent Id="mz7020_som_base_clk_wiz_0_0_synth_1"/>
+		<Parent Id="mz7020_som_base_auto_pc_0_synth_1"/>
+		<Parent Id="mz7020_som_base_axi_intc_0_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_50MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_100MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_166MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_200MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_142MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_proc_sys_reset_41MHz_0_synth_1"/>
+		<Parent Id="mz7020_som_base_ps7_0_synth_1"/>
+	</Run>
+	<Parameters>
+		<Parameter Name="runs.monitorLSFJobs" Val="true" Type="bool"/>
+		<Parameter Name="runs.enableClusterConf" Val="true" Type="bool"/>
+		<Parameter Name="general.ignorePathLengthChecks" Val="true" Type="bool"/>
+		<Parameter Name="general.shortenLongPath" Val="true" Type="bool"/>
+	</Parameters>
+	<ProductInfo Name="vivado"/>
+</Runs>
+

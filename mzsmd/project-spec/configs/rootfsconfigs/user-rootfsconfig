@@ -3,5 +3,3 @@
 
 CONFIG_gpio-demo
 CONFIG_peekpoke
-CONFIG_epcoredrv
-CONFIG_epxcore
