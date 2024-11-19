@@ -1,0 +1,19 @@
+.\" This is a man page for the epxcore program.  
+.
+.\" Written by Claudio Bertacchini.
+.TH EPXCORE 1 "26/07/2024" "(C) IGEA SpA." "Claudio Bertacchini"
+.
+.SH NAME
+epxcore \- starts the communication server
+.
+.SH SYNOPSIS
+.B epxcore
+.
+.SH DESCRIPTION
+The
+.B epxcore
+command start the server used to communicate with the power unit.
+.
+.SH AUTHOR
+Claudio Bertacchini <c.bertacchini@igeamedical.com
+.

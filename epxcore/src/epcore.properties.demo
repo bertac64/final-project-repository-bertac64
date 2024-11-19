@@ -1,0 +1,21 @@
+# epcore.properties
+#
+
+# =========================
+# Configurazione di sistema
+
+# File di log degli errori
+sys.err = ./epcore.err
+# Attiva i messaggi di variazione registri FPGA
+sys.fmon = 1
+# Timeout di inattivita` sul canale
+sys.tidle = 36000
+# Tempo di attesa durante la scharica (a relays chiusi)
+sys.disch_idle = 2000
+# Tempo di attesa a fine carica per evitare fluttuazioni
+sys.ch_idle = 100
+
+# ==========================
+# Configurazione FPGA
+fpga.version = 0100
+

@@ -1,0 +1,52 @@
+#!/bin/sh
+# Rev 1.0 del 25/10/2024
+
+#depend() {
+#	use net.lo
+#}
+
+# Please, don't modify the code after this line ---------------
+
+BASEDIR="/opt/epxcore"
+EP_NAME="epxcore"
+
+EP_LOGFILE="$BASEDIR/spool/$EP_NAME.log"
+EP_PIDFILE="/var/run/$EP_NAME.pid"
+EP_PROPERTIES="$BASEDIR/conf/$EP_NAME.properties"
+EP_CORE="$BASEDIR/bin/$EP_NAME"
+
+
+NULL="/dev/null"
+ANSWER="Configured .......: Yes"
+
+case "$1" in
+	start)
+#		rm -f $EP_PIDFILE
+
+		echo "Starting $EP_NAME"
+
+		$EP_CORE -p $EP_PROPERTIES &> "$EP_LOGFILE" &
+		PID=$!
+		RET=$?
+		echo "$PID" > "$EP_PIDFILE"
+		;;
+	stop)
+		echo "Stopping $EP_NAME"
+		if [ -e $EP_PIDFILE ] ; then
+			pid=`cat $EP_PIDFILE`
+			echo "$pid"
+			kill $pid
+			rm "$EP_PIDFILE"
+		fi
+		;;
+	restart)
+		$0 stop;
+		$0 start;
+		;;
+	*)
+		echo "Usage: /etc/init.d/epxcore {start|stop|restart}"
+		exit 1
+		;;
+esac
+
+exit 0
