@@ -22,18 +22,23 @@
 #include "../libep/libep.h"
 #include "../liblog/log.h"
 
+#include "fpga.h"
 #include "errors.h"
 #include "epxcore.h"
 #include "main.h"
 #include "command.h"
 #include "util.h"
 #include "sharedVar.h"
+#include "middle.h"
 
 // Commentare per avere i valori in livelli logici
 #define REALVALUES
 
 /* ========================================================================= */
 /* Prototipi interni */
+
+static void startAsync(t_cmd *pCmd, int32_t cnt, t_stato *p_stato);
+static ssize_t mutex_startAsync(t_cmd *, int32_t, t_stato *, char *);
 
 /* ========================================================================= */
 /* static global */
@@ -43,6 +48,24 @@ static ssize_t fCmd_quit (t_stato *p_stato, t_cmd *pCmd, \
 	char *buffer, const char **tok, int32_t ntok, int32_t cnt);
 static ssize_t fCmd_info (t_stato *p_stato, t_cmd *pCmd, \
 	char *buffer, const char **tok, int32_t ntok, int32_t cnt);
+static ssize_t fCmd_poke (t_stato *p_stato, t_cmd *pCmd, \
+	char *buffer, const char **tok, int32_t ntok, int32_t cnt);
+static ssize_t fCmd_peek (t_stato *p_stato, t_cmd *pCmd, \
+	char *buffer, const char **tok, int32_t ntok, int32_t cnt);
+static ssize_t fCmd_read (t_stato *p_stato, t_cmd *pCmd, \
+	char *buffer, const char **tok, int32_t ntok, int32_t cnt);
+static ssize_t fCmd_write (t_stato *p_stato, t_cmd *pCmd, \
+	char *buffer, const char **tok, int32_t ntok, int32_t cnt);
+static ssize_t fCmd_fill (t_stato *p_stato, t_cmd *pCmd, \
+	char *buffer, const char **tok, int32_t ntok, int32_t cnt);
+static ssize_t fCmd_abort (t_stato *p_stato, t_cmd *pCmd, \
+	char *buffer, const char **tok, int32_t ntok, int32_t cnt);
+static ssize_t fCmd_idle (t_stato *p_stato, t_cmd *pCmd, \
+	char *buffer, const char **tok, int32_t ntok, int32_t cnt);
+static ssize_t fCmd_hwreset (t_stato *p_stato, t_cmd *pCmd, \
+	char *buffer, const char **tok, int32_t ntok, int32_t cnt);
+
+
 
 /* tabella principale dei comandi */
 static t_cmd S_command[] = {
@@ -50,6 +73,22 @@ static t_cmd S_command[] = {
 	{ "nop",	0, FALSE,	0,	fCmd_nop,	NULL },
 	{ "quit",	0, FALSE,	0,	fCmd_quit,	NULL },
 	{ "info",	0, FALSE,	0,	fCmd_info,	NULL },
+
+	// Comandi ad uso debug
+	{ "poke",	2, FALSE,	1,	fCmd_poke,	NULL },
+	{ "po",		2, FALSE,	1,	fCmd_poke,	NULL },		// Sinonimo di "poke"
+	{ "peek",	1, FALSE,	0,	fCmd_peek,	NULL },
+	{ "pe",		1, FALSE,	0,	fCmd_peek,	NULL },		// Sinonimo di "peek"
+	{ "read",	2, FALSE,	1,	fCmd_read,	NULL },
+	{ "write",	-1,FALSE,	1,	fCmd_write,	NULL },		// N. variabile di pars
+	{ "fill",	2, FALSE,	1,	fCmd_fill,	NULL },
+	
+	{ "idle",	0, FALSE,	1,	fCmd_idle,	NULL },
+	{ "i",		0, FALSE,	1,	fCmd_idle,	NULL },		// sinonimo di idle
+	{ "abort",	0, FALSE,	1,	fCmd_abort,	NULL },
+	{ "a",		0, FALSE,	1,	fCmd_abort,	NULL },		// sinonimo di "abort"
+
+	{ "hwreset",	0, FALSE,	0,	fCmd_hwreset,	NULL },
 
 	{ NULL,		0, FALSE,	0,	NULL,		NULL }		/* tappo */
 };
@@ -433,3 +472,683 @@ static ssize_t fCmd_info(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 }
 
 /*----------------------------------------------------------------------------*/
+
+/**
+ * Scrive nella PGA il comando di hardware reset. Richiede due parametri: indirizzo e dato.
+ * Torna le dimensioni della risposta.
+ */
+static ssize_t fCmd_hwreset(t_stato *p_stato, t_cmd *pCmd, char *buffer,
+						const char **tok, int ntok, int cnt)
+{
+	ssize_t ret = 0;
+	assert(ntok == 0);
+
+	(void) tok;
+	(void) p_stato;
+	(void) pCmd;
+	(void) ntok;
+	(void) cnt;
+
+	if (reset_hardware() != 0)
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "reset failed", -1, e_errFPGA);
+	if (init_hardware() != 0)
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "init failed", -1, e_errFPGA);
+
+	return ret;
+}
+
+
+/**
+ * Scrive un dato nella PGA. Richiede due parametri: indirizzo e dato.
+ * Torna le dimensioni della risposta.
+ */
+static ssize_t fCmd_poke(t_stato *p_stato, t_cmd *pCmd, char *buffer,
+						const char **tok, int32_t ntok, int32_t cnt)
+{
+	ssize_t ret;
+	uint32_t addr;
+	uint32_t data;
+
+	assert(ntok == 2);
+
+	(void) p_stato;
+	(void) pCmd;
+	(void) ntok;
+	(void) cnt;
+
+	sscanf(tok[0], "%X", &addr);
+	if (addr >= 0x80) {
+		log_warning("poke: bad address (%08X)", addr);
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+												"bad address", -1, e_errParam);
+	}
+
+	sscanf(tok[1], "%X", &data);
+	data &= 0x0000FFFF;
+
+	/* Scrivi con il wrapper fpga.cpp */
+	if (fpga_poke((fpga_addr_t)addr, data) != 0) {
+		log_error("poke %08X %08X failed", addr, data);
+		ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+												"poke failed", -1, e_errFPGA);
+	}
+	else
+		ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, NULL, -1, 0);
+	return ret;
+}
+
+/*----------------------------------------------------------------------------*/
+
+/**
+ * Legge un dato dalla PGA. Richiede un parametro: indirizzo.
+ * Torna le dimensioni della risposta.
+ */
+static ssize_t fCmd_peek(t_stato *p_stato, t_cmd *pCmd, char *buffer,
+						const char **tok, int32_t ntok, int32_t cnt)
+{
+	ssize_t ret;
+	char ans[MAXSTR];
+	uint32_t addr = 0;
+
+	assert(ntok == 1);
+
+	(void)p_stato;
+	(void)pCmd;
+	(void) ntok;
+	(void) cnt;
+
+	/* Se il parametro e` "*", stampa tutti i registri */
+	if (strcmp(tok[0], "*") == 0) {
+		int32_t state = 0;
+		const char *p;
+		uint32_t val;
+
+		while ((p = fpga_getnextreg(&state, &addr, &val)) != NULL) {
+			sprintf(ans, "+ %08X %-12.12s = %08X", 0x0000FFFF & addr, p, val);
+			if (write2client(p_stato->fd, ans, strlen(ans)) < 0) {
+				log_error("peek: cant't write to client");
+				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+												"Write error", -1, e_errInt);
+			}
+		}
+		ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, "done", -1, 0);
+	}
+	else {
+		sscanf(tok[0], "%X", &addr);
+		if (addr >= 0x80) {
+			log_warning("peek: bad address (%08X)", addr);
+			return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+												"bad address", -1, e_errParam);
+		}
+
+		/* Leggi con il wrapper fpga.cpp */
+		fpga_data_t data;
+		if ((data = fpga_peek((fpga_addr_t)addr)) < 0) {
+			log_error("peek %08X: failed", addr);
+			ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+												"peek failed", -1, e_errFPGA);
+		}
+		else  {
+			sprintf(ans, "%08X", (unsigned int)data);
+			ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, ans, -1, 0);
+		}
+	}
+	return ret;
+}
+
+/*----------------------------------------------------------------------------*/
+
+/**
+ * Legge un buffer dalla PGA. Richiede due parametri: indirizzo base e
+ * n.di parole.
+ * Torna le dimensioni della risposta.
+ */
+static ssize_t fCmd_read(t_stato *p_stato, t_cmd *pCmd, char *buffer,
+						const char **tok, int32_t ntok, int32_t cnt)
+{
+	ssize_t ret;
+//	uint32_t buf[FPGA_MEMORY_SIZE];
+	uint32_t *buf;
+	size_t base, count;
+
+	assert(ntok == 2);
+
+	(void)p_stato;
+	(void)pCmd;
+	(void) ntok;
+	(void) cnt;
+
+	base = 0;
+	if (sscanf(tok[0], "%zX", &base) != 1) {
+		log_warning("read: bad base address format (%s)", tok[0]);
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+										"bad address format", -1, e_errParam);
+	}
+
+	if (base >= SRAM_IP_BASEADDR) {
+		log_warning("read: base address too high (%08X)", base);
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+											"base too high", -1, e_errParam);
+	}
+
+	count = 0;
+	if (sscanf(tok[1], "%zX", &count) != 1) {
+		log_warning("read: bad count format (%s)", tok[1]);
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+											"bad count format", -1, e_errParam);
+	}
+//	if ((count % 0x200) != 0) {
+//		log_warning("read: block size (count=%08X)", count);
+//		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+//										"invalid block size", -1, e_errParam);
+//	}
+
+	if ((count*sizeof(uint32_t)) + base >= SRAM_IP_BASEADDR) {
+		log_warning("read: end address too high (%08X)", (count*sizeof(uint32_t)) + base);
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+										"end address too high", -1, e_errParam);
+	}
+
+	buf = (uint32_t *) malloc(sizeof(uint32_t) * (count));
+
+	/* Leggi con il wrapper fpga.cpp */
+	if (fpga_read(base/4, buf, count) < 0) {
+		log_error("read: read(%08X,%08X) failed", base, (count+base)*4);
+		ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+												"read failed", -1, e_errFPGA);
+	}
+	else  {
+		int j;
+		char ans[MAXSTR];
+		sprintf(ans, "%d", count);
+		int cont = atoi(ans);
+		log_debug("read: read(%08X,%08X)", base, cont);
+		strcpy(ans ,"");
+		for (j=0; j<cont; j+=8) {
+			size_t k;
+
+			sprintf(ans, "+ %08zX", j*4+(base));
+
+			for (k=0; k < 8; k++) {
+				char tmps[8];
+				sprintf(tmps, " %08zX", buf[j+k]);
+				strcat(ans, tmps);
+			}
+			if (write2client(p_stato->fd, ans, strlen(ans)) < 0) {
+				log_error("read: cant't write to client");
+				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+												"Write error", -1, e_errInt);
+			}
+		}
+		ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, "EOF", -1, 0);
+	}
+	free(buf);
+	return ret;
+}
+
+/*----------------------------------------------------------------------------*/
+
+/**
+ * Riempie un'area di memoria della PGA. Richiede due parametri:
+ * indirizzo base e pattern da scrivere.
+ * L'indirizzo e` della forma:
+ * base[:end] (es: 10000:10FFF).
+ * Il pattern e` della forma:
+ * word[*count] (es. DEADBEEF*100)
+ * Tutti i numeri sono in esadecimale. Nel caso si specifichino sia
+ * base:end che count, non viene comunque superato end.
+ * Torna le dimensioni della risposta.
+ */
+static ssize_t fCmd_fill(t_stato *p_stato, t_cmd *pCmd, char *buffer,
+						const char **tok, int32_t ntok, int32_t cnt)
+{
+	ssize_t ret;
+//	uint32_t buf[FPGA_MEMORY_SIZE];
+	uint *buf;
+	uint32_t j, base, end, pattern, count;
+	int32_t n;
+
+	assert(ntok == 2);
+
+	(void)p_stato;
+	(void)pCmd;
+	(void)ntok;
+	(void)cnt;
+
+	base = end = 0;
+	n = sscanf(tok[0], "%x:%x", &base, &end);
+	if (n != 1 && n != 2) {
+		log_warning("fill: bad address format (%s)", tok[0]);
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+										"bad address format", -1, e_errParam);
+	}
+	if (n == 2 && end < base) {
+		log_warning("fill: end < base (%08X < 08X)", end, base);
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+										"end < base", -1, e_errParam);
+	}
+	if (base >= SRAM_IP_BASEADDR) {
+		log_warning("fill: base too high (%08X)", base);
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+											"base too high", -1, e_errParam);
+	}
+	if (end == 0)
+		end = base;
+
+	pattern = count = 0;
+	sscanf(tok[1], "%x*%x", &pattern, &count);
+	if (n != 1 && n != 2) {
+		log_warning("fill: bad pattern format (%s)", tok[1]);
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+										"bad pattern format", -1, e_errParam);
+	}
+	if (count == 0 || (end > base && count > end - base + 1))
+		count = end - base + 1;
+
+//	if ((count % 0x200) != 0) {
+//		log_warning("fill: invalid block size (%08X)", count);
+//		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+//										"invalid block size", -1, e_errParam);
+//	}
+	if (((count*sizeof(uint32_t)) + base) > SRAM_IP_BASEADDR) {
+		log_warning("fill: end address toot high (%08X)", (count*4)+base);
+		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+										"end address too high", -1, e_errParam);
+	}
+
+	buf = (uint32_t *) malloc(sizeof(uint32_t) * count);
+
+	for (j=0; j<count; j++)
+		buf[j] = pattern;
+
+	/* Scrivi con il wrapper fpga.cpp */
+	if (fpga_write(base/4, buf, count) < 0) {
+		log_error("fill: write(%08X,%08X) failed", base, (count*4)+base);
+		ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+												"write failed", -1, e_errFPGA);
+	}
+	else {
+		char stmp[MAXSTR];
+		sprintf(stmp, "%d 32bit patterns written", count);
+		ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, stmp, -1, 0);
+	}
+	free(buf);
+	return ret;
+}
+
+/*----------------------------------------------------------------------------*/
+
+/**
+ * Scrive un buffer nella PGA. Richiede un indirizzo e
+ * una serie di valori esadecimali.
+ * Se la serie non puo` concludersi in un singolo mesaggio
+ * perche' ci sono troppi valori, allora il primo mesaggio
+ * termina con '\' e i successivi iniziano con '+'.
+ * Se il numero di byte da scrivere non e` un multiplo
+ * di 512, il numero viene arotondato al multiplo di 512
+ * successivo e il buffer viene paddato con 0.
+ * Torna le dimensioni della risposta.
+ */
+static ssize_t fCmd_write(t_stato *p_stato, t_cmd *pCmd, char *buffer,
+						const char **tok, int32_t ntok, int32_t cnt)
+{
+	ssize_t ret;
+	uint32_t val, base;
+	int32_t n;
+
+	/* Questo comando ha un numero variabile di parametri */
+	if (ntok <= 0) {
+		ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+									"not enough parameters", -1, e_errSyntax);
+		goto end_reset;
+	}
+
+	(void)pCmd;
+	(void)cnt;
+
+	if (strcmp(tok[0], "write") == 0) {
+		/* primo messaggio */
+		int32_t j;
+
+		n = sscanf(tok[1], "%x", &base);
+		if (n != 1) {
+			log_warning("write: bad address format (%s)", tok[0]);
+			ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+										"bad address format", -1, e_errParam);
+			goto end_reset;
+		}
+		if (base >= (SRAM_TR_BASEADDR - SRAM_IP_BASEADDR)) {
+			log_warning("write: base address too high (%08X)", base);
+			ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+											"base too high", -1, e_errParam);
+			goto end_reset;
+		}
+
+		p_stato->base = base;
+		p_stato->count = 0;
+
+		for (j = 2; j < ntok; j++) {
+			if (j == ntok -1 && equal(tok[j], "\\"))
+				break;
+			n = sscanf(tok[j], "%x", &val);
+			if (n != 1) {
+				log_warning("write: bad data format (tok[%d]=%s)", j, tok[j]);
+				ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+											"bad data format", -1, e_errParam);
+				goto end_reset;
+			}
+
+			p_stato->data[p_stato->count++] = 0xFFFFFFFF & val;
+		}
+	}
+	else if (strcmp(tok[0], "+") == 0) {
+		/* Messaggi successivi */
+		int32_t j;
+
+		for (j = 1; j < ntok; j++) {
+			if (j == ntok -1 && equal(tok[j], "\\"))
+				break;
+			n = sscanf(tok[j], "%x", &val);
+			if (n != 1) {
+				log_warning("write: bad data format (tok[%d]=%s)", j, tok[j]);
+				ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+											"bad data format", -1, e_errParam);
+				goto end_reset;
+			}
+
+			p_stato->data[p_stato->count++] = 0xFFFFFFFF & val;
+		}
+	}
+	else {
+		/* errore */
+		log_warning("write: invalid message (%s)", tok[0]);
+		ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+											"invalid message", -1, e_errSyntax);
+		goto end_reset;
+	}
+
+	if (equal(tok[ntok-1], "\\")) {
+		/* Prosegui senza passare da errore */
+		ret = 0;
+		return ret;
+	}
+	else {
+		/* Ultimo messaggio: scrivi */
+		uint32_t buf[DATA_BUFFER_SIZE];
+		uint32_t j, count;
+
+		/* Recupera le info */
+		base = p_stato->base;
+		count = p_stato->count;
+
+		if (base + (count*4) >= (SRAM_TR_BASEADDR - SRAM_IP_BASEADDR)) {
+			log_warning("write: end address too high (%08X)", base+count);
+			ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+										"end address too high", -1, e_errParam);
+			goto end_reset;
+		}
+
+		for (j=0; j<count; j++)
+			buf[j] = 0xFFFFFFFF & p_stato->data[j];
+
+		/* Comunque vada, resetta lo stato */
+
+		/* Scrivi con il wrapper fpga.cpp */
+		if (fpga_write(base/4, buf, count) < 0) {
+			log_error("write: write(%08X,%08X) failed", base, base+count);
+			ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
+												"write failed", -1, e_errFPGA);
+		}
+		else {
+			char stmp[MAXSTR];
+			sprintf(stmp, "%d word written", count);
+			ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, stmp, -1, 0);
+		}
+	}
+
+end_reset:
+	p_stato->currCmd = NULL;
+	p_stato->base = 0;
+	p_stato->count = 0;
+	return ret;
+}
+
+/*----------------------------------------------------------------------------*/
+
+/**
+ * Mette il server in idle
+ * Torna le dimensioni della risposta.
+ */
+static ssize_t fCmd_idle(t_stato *p_stato, t_cmd *pCmd, char *buffer,
+						const char **tok, int32_t ntok, int32_t cnt)
+{
+	ssize_t ret;
+
+	assert(ntok == 0);
+
+	(void) p_stato;
+	(void) pCmd;
+	(void) ntok;
+	(void) tok;
+	(void) cnt;
+
+	/* funziona sempre! */
+	set_state(e_idle);
+
+	/* Ack del comando */
+	ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, "going idle", -1, -1);
+	return ret;
+}
+
+/**
+ * Funzione di simulazione del comando abort.
+ * Torna le dimensioni della risposta.
+ */
+static ssize_t fCmd_abort(t_stato *p_stato, t_cmd *pCmd, char *buffer,
+						const char **tok, int32_t ntok, int32_t cnt)
+{
+	ssize_t ret;
+	t_sharedVar *p_sv;
+
+	assert(ntok == 0);
+
+	(void) p_stato;
+	(void) pCmd;
+	(void) ntok;
+	(void) tok;
+	(void) cnt;
+
+	explain_error("Status just before abort: ");
+	//inizio l'abort
+
+	switch (get_state()) {
+/*	case e_rfid:
+		task_cancel(&(p_stato->t));
+
+		// Resetta il bit
+		p_sv = acquireSharedVar();
+		p_sv->inRFID = FALSE;
+		releaseSharedVar(&p_sv);
+		break;*/
+
+	case e_chrgn:
+	case e_ready:
+		log_info("ABORT in ready");	// XXX
+		// Scarica della parte di potenza; equivale a CHARGE 0
+		/* memorizza carica attesa e tolleranza */
+#ifndef SIMULAZIONE
+	{
+		// Se c'e` energia, scarica; altrimenti, resetta
+		fpga_data_t alarm = fpga_peek(r_Alarm);
+		if (alarm == -1) {
+			log_error("abort: can't get FPGA Alarm");
+			return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "Can't get alarm", -1, e_errFPGA);
+		}
+
+		uint16_t fpga_alarm = alarm>>16;
+		if (btst(fpga_alarm, FA_ENERGY)) {
+			if (do_charge(0, 0) != 0)
+				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "discharge failed", -1, e_errFPGA);
+			charge_timer_stop();
+			log_warning("abort: system discharged.");
+		}
+		else {
+			log_warning("abort: system reset.");
+			if (reset_hardware() != 0)
+				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "reset failed", -1, e_errFPGA);
+			if (init_hardware() != 0)
+				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "init failed", -1, e_errFPGA);
+		}
+	}
+#endif
+		p_sv = acquireSharedVar();
+		p_sv->HVadc = p_sv->HVdac  = 0;
+		p_sv->LVadc = p_sv->LVdac = 0;
+		releaseSharedVar(&p_sv);
+
+#ifdef SIMULAZIONE
+		(void)fSth_chrg(p_stato);
+#endif
+		break;
+
+	case e_armed:
+	case e_wtreat:
+		log_info("ABORT in wtreat");	// XXX
+		// Cancellazione del bit FS_P1EDGE -> ritorno allo stato READY
+#ifndef SIMULAZIONE
+		fpga_data_t state = 0;
+		uint16_t fpga_state;
+		int32_t retry = 10;
+		do {
+			if (fpga_poke((fpga_addr_t)r_Command, FC_PULSE_ABORT) != 0) {
+				log_error("abort: can't command PULSE_ABORT");
+				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "poke failed", -1, e_errFPGA);
+			}
+
+			/* Azzero il data sent */
+			if (fpga_poke((fpga_addr_t)r_Datasent, 0) != 0) {
+				comm_error("can't write on datasent register");
+				return -1;
+			}
+
+			msleep(100);
+
+			state = fpga_peek(r_State);				//read fpga state register
+			if (state == -1) {
+				log_error("abort: can't get FPGA state");
+				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "peek failed", -1, e_errFPGA);
+			}else{
+				fpga_state = state & 0x0000FFFF;
+			}
+
+		}
+		while (--retry > 0 && (fpga_state & MASK_ARMED) == PATT_ARMED);
+#else
+		(void)set_state(e_ready);
+#endif
+		break;
+	case e_trtmt:
+		log_info("ABORT in trtmt");	// XXX
+		// Arresto immediato del trattamento;
+#ifndef SIMULAZIONE
+		// Tieni traccia che stai per eseguire un abort
+		p_sv = acquireSharedVar();
+		p_sv->inAbort = TRUE;
+		releaseSharedVar(&p_sv);
+
+		if (fpga_poke((fpga_addr_t)r_Command, FC_PULSE_ABORT) != 0) {
+			log_error("abort: can't command PULSE_ABORT");
+			return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "poke failed", -1, e_errFPGA);
+		}
+		// Azzera contatore impulsi
+		if (fpga_peek((fpga_addr_t)r_PlsDelivered) < 0) {
+			log_error("abort: can't zero pulse counter");
+			return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "poke failed", -1, e_errFPGA);
+		}
+
+		/* Azzero il data sent */
+		if (fpga_poke((fpga_addr_t)r_Datasent, 0) != 0) {
+			comm_error("can't write on datasent register");
+			return -1;
+		}
+#else
+//		p_sv = acquireSharedVar();
+//		p_sv->HVadc = p_sv->HVdac =  0;
+//		p_sv->LVadc = p_sv->LVdac = 0;
+//		releaseSharedVar(&p_sv);
+
+        // Qualunque thread stia girando, bloccalo
+		task_cancel(&(p_stato->t));
+
+		(void)set_state(e_done);
+#endif
+		break;
+	case e_done:
+		log_info("ABORT in done");	// XXX
+		// cancellazione del bit FS_DONE -> ritorno allo stato READY
+
+#ifndef SIMULAZIONE
+		if (done2ready() != 0)
+			return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "FPGA comms error", -1, e_errFPGA);
+#else
+        // Qualunque thread stia girando, bloccalo
+		task_cancel(&(p_stato->t));
+
+		(void)set_state(e_ready);
+#endif
+		break;
+	default:
+		// In tutti gli altri casi si comporta come una no-op */
+		break;
+	}
+
+	/* Ack del comando */
+	ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, "Abort activated", -1, -1);
+	return ret;
+}
+
+/******************************************************************************/
+/* Funzioni di supporto 													  */
+/******************************************************************************/
+
+/**
+ * Avvia un comando asincrono.
+ * NB: in caso di errore fatale, esce.
+ */
+static void startAsync(t_cmd *pCmd, 	/** Descrittore del comando */
+					   int32_t cnt, 		/** Riferimento (progressivo) */
+					   t_stato *p_stato /** Dati di canale */)
+{
+	/* Facciamo partire il thread  */
+	assert(pCmd->threadStart != NULL);
+
+	task_create(&(p_stato->t), cnt, pCmd, p_stato);
+}
+
+/**
+ * Fa l'ack del comando e avvia in modo mutuamente esclusivo il
+ * task corrispondente.
+ */
+static ssize_t mutex_startAsync(t_cmd * pCmd,
+								int32_t cnt,
+								t_stato *p_stato,
+								char *buffer)
+{
+	int32_t valid;
+	ssize_t ret;
+
+	pthread_mutex_lock(&(p_stato->t.mutex));
+	valid = p_stato->t.valid;
+	pthread_mutex_unlock(&(p_stato->t.mutex));
+
+	if (!valid) {
+		ret = makeAnswer(buffer, e_cmdAsyncAck, e_cmdOk, NULL, NULL, cnt, -1);
+		startAsync(pCmd, cnt, p_stato);
+	}
+	else {
+		log_error("%s: another task is running", pCmd->cmd);
+		ret = makeAnswer(buffer, e_cmdAsyncAck, e_cmdKo,
+							"Another task is running", NULL, cnt, e_errState);
+	}
+	return ret;
+}

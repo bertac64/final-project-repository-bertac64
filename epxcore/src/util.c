@@ -38,6 +38,7 @@
 #include "../libep/libep.h"
 #include "../liblog/log.h"
 
+#include "fpga.h"
 #include "errors.h"
 #include "epxcore.h"
 #include "command.h"

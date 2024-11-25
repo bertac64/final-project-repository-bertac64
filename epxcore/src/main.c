@@ -1,8 +1,9 @@
 /**
- * main.c - main del programma epxcore.
+ * main.c - main routine of epxcore.
  *
  * (C) 2024 bertac64
  *
+ * 21/11/2024 - edit server status management
  */
 
 /* POSIX.1 */
@@ -36,19 +37,23 @@
 #include "../liblog/log.h"
 
 #include "epxcore.h"
+#include "fpga.h"
 #include "errors.h"
 #include "main.h"
 #include "command.h"
 #include "util.h"
 #include "sharedVar.h"
+#include "middle.h"
 
 #define ECG_TRIGGER_CHECK
+#define SYS_TIDLE = 172800
 
 /* ========================================================================= */
 /* Globali al progetto */
 
 int G_flgVerbose = 0;		/* livello di verbosita` per log e debug */
 int G_thPipe[2];			/* Comunicazione da task a main thread */
+t_epconf G_epconf;			/* Dati configurazione generale (RO a runtime) */
 t_map * G_map = NULL;		/* Mappa delle properties */
 char *G_fname_map = NULL;	/* Nome del file di properties */
 t_device G_device; 			/* struttura delle info sul device*/
@@ -134,7 +139,7 @@ int main(int argc, char **argv)
 			break;
 
 		case 'v':
-			printf("%s;%s;%s;%s\n", argv[0], PGM_VERS, __DATE__, __TIME__);
+			printf("%s;%s;%s;%s;%s\n", argv[0], PGM_VERS, get_cputype(z), __DATE__, __TIME__);
 			return 0;
 			break;
 
@@ -178,11 +183,18 @@ int main(int argc, char **argv)
 	signal(SIGCHLD, sig_chld);
 
 	/* Inizializzazioni varie */
+	//epcoredrv_open();
 	stato_init();
 	init_timer();
 
+	/* Inizializza il timeout idle di sessione SYS_TIDLE(se non c'e` usa il default) */
+	S_conn_tout = atoi(SYS_TIDLE)*1000;
+
 	/* Inizializza le variabili condivise (stato, ...) */
 	initSharedVar();
+
+	if (start_power(FALSE) < 0)
+		return 1;
 
 	/* Fai partire il thread di aggiornamento dello stato */
 	if (pthread_create(&stato_th, NULL, eval_state, NULL) < 0) {
@@ -435,6 +447,9 @@ int main(int argc, char **argv)
 
 		log_debug( "rientro in poll ----------------------");
 	}
+
+	epcoredrv_close();
+	close(SRAM.fd_mem);
 	return 0;
 }
 
@@ -623,7 +638,23 @@ void * eval_state(void *par)
 	char buffer[MAXPRO_LCMD];
 	size_t nb;
 	int sampling_period_ms = 100;	// periodo di campionamento stato/allarmi
+	uint16_t fpga_old_state = 0;
+	uint16_t fpga_state;
+	fpga_data_t state;
+	fpga_data_t alrm;
+	uint16_t fpga_alarm = 0;
+	uint16_t fpga_old_alarm;
+	t_mclock pulse_tout = 0;
+	int pulse_tick = 0;
+	int initial_pulse_tick;
 	enum e_state old_s = get_state();
+	fpga_state = fpga_old_state = 0x1800;
+	fpga_alarm = fpga_old_alarm = 0;
+
+	uint16_t fpga_val = 0;
+	uint16_t fpga_old_state2 = 0;
+	uint16_t fpga_state2 = 0;
+	t_sharedVar *p_sv;
 
 	(void)par;
 
@@ -631,12 +662,86 @@ void * eval_state(void *par)
 		enum e_state s = get_state();
 
 		if (s != e_idle) {
+			p_count = 0;
+			while(G_bulkComm == TRUE){
+				msleep(2);
+				if (p_count > 2500){
+					comm_error("bulk transfer exceeding 5 sec.");
+					break;
+				}
+				p_count ++;
+			}
+
+			do{
+				state = fpga_peek(r_State);				//read fpga state register
+				if (state == -1){
+					comm_error("Can't get FPGA State");
+					continue;
+				}else{
+					fpga_state = (state & 0x0000FFFF);
+					fpga_state2 = (state>>16);
+				}
+				alrm = fpga_peek(r_Alarm);				//read fpga alarm register
+				if (alrm == -1) {
+					comm_error("Can't get FPGA Alarm");
+					continue;
+				}else
+					fpga_alarm = alrm;
+
+				if (imp_count > 3){
+					imp_count = 0;
+					msleep(1000);
+					(void)set_state(e_init);
+					break;
+				}
+				else
+				{
+					if (fpga_state == fpga_alarm && fpga_state == fpga_state2){
+						comm_error("FPGA clock freezed. Trying to recover it.");
+						imp_count ++;
+						msleep(100);
+					}
+				}
+
+			}while(fpga_state == fpga_alarm && fpga_state == fpga_state2);
+			
+			if (log_fpga &&
+				(fpga_old_state != fpga_state ||
+				 fpga_old_state2 != fpga_state2 ||
+				 fpga_old_alarm != fpga_alarm)) {
+				//log_info("%04X %04X %04X", fpga_state, fpga_state2, fpga_alarm);
+				nb = sprintf(buffer, "State=%04X State2=%04X Alarm=%04X", fpga_state, fpga_state2, fpga_alarm);
+				write2mainAll(buffer, nb);
+			}
+			
 			/* Calcolo degli stati **************************************** */
 			if (s == e_blank) {
-
+				if ((fpga_state & MASK_READY)!= PATT_READY){
+					// Condizione anomala
+					log_warning("HW not in ready");
+					nb = warningMsg(W_HIGH, FALSE,
+									e_errAsyncHWInUnexpectedState, buffer,
+									"HW not in ready ($1=%04X;))",
+									(0x00FFFF)&fpga_state);
+					}
+					write2mainAll(buffer, nb);
+				}
 			}
 			else {
-				s = e_ready;
+				if ((fpga_state & MASK_READY) == PATT_READY)
+				{
+					s = e_ready;
+				}
+				else{
+					log_warning("HW not in ready)");
+					nb = warningMsg(W_HIGH, FALSE,
+									e_errAsyncHWInUnexpectedState, buffer,
+									"HW not in ready ($1=%04X;))",
+									(0x00FFFF)&fpga_state);
+					}
+					write2mainAll(buffer, nb);
+					s = e_blank;
+				}
 				sampling_period_ms = 2;
 				// Imposta lo stato calcolato
 				(void)set_state(s);

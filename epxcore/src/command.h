@@ -39,9 +39,16 @@ struct S_CMD {
 };
 typedef struct S_CMD t_cmd;
 
+/*********************************************************************/
+/* Valori e limiti */
+
+#define GET_BULK_BASE	0x00000000	// Base per il trasferimento misure
+
+
 /* prototipi */
 ssize_t makeBanner(char *, int32_t);
 ssize_t stateVar(char *, enum e_state, enum e_state);
+ssize_t fpgaMsg(char *buffer);
 ssize_t warningMsg(int32_t level, int32_t overwrite, enum e_errCod errcode, char *buffer, const char *format,	...);
 ssize_t elaboraCmd(t_stato *, char *, const char *, size_t);
 size_t makeAnswer(char *buffer, enum e_modeType modeType,
