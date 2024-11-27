@@ -18,7 +18,7 @@
 #include <math.h>
 #include <malloc.h>
 
-/* Librerie locali */
+/* Local Libraries */
 #include "../libep/libep.h"
 #include "../liblog/log.h"
 
@@ -31,11 +31,11 @@
 #include "sharedVar.h"
 #include "middle.h"
 
-// Commentare per avere i valori in livelli logici
+// Comment to have values ​​in logical levels
 #define REALVALUES
 
 /* ========================================================================= */
-/* Prototipi interni */
+/* Internal Prototypes */
 
 /* ========================================================================= */
 /* static global */
@@ -64,7 +64,7 @@ static ssize_t fCmd_hwreset (t_stato *p_stato, t_cmd *pCmd, \
 
 
 
-/* tabella principale dei comandi */
+/* main command table */
 static t_cmd S_command[] = {
 	/* cmd	  npar async   idly	Cmd_func	Start_thread */
 	{ "nop",	0, FALSE,	0,	fCmd_nop,	NULL },
@@ -73,35 +73,26 @@ static t_cmd S_command[] = {
 
 	// Comandi ad uso debug
 	{ "poke",	2, FALSE,	1,	fCmd_poke,	NULL },
-	{ "po",		2, FALSE,	1,	fCmd_poke,	NULL },		// Sinonimo di "poke"
 	{ "peek",	1, FALSE,	0,	fCmd_peek,	NULL },
-	{ "pe",		1, FALSE,	0,	fCmd_peek,	NULL },		// Sinonimo di "peek"
 	{ "read",	2, FALSE,	1,	fCmd_read,	NULL },
 	{ "write",	-1,FALSE,	1,	fCmd_write,	NULL },		// N. variabile di pars
 	{ "fill",	2, FALSE,	1,	fCmd_fill,	NULL },
 	
 	{ "idle",	0, FALSE,	1,	fCmd_idle,	NULL },
-	{ "i",		0, FALSE,	1,	fCmd_idle,	NULL },		// sinonimo di idle
 	{ "abort",	0, FALSE,	1,	fCmd_abort,	NULL },
-	{ "a",		0, FALSE,	1,	fCmd_abort,	NULL },		// sinonimo di "abort"
-
+	
 	{ "hwreset",	0, FALSE,	0,	fCmd_hwreset,	NULL },
 
 	{ NULL,		0, FALSE,	0,	NULL,		NULL }		/* tappo */
 };
 
-#ifdef SIMULAZIONE
-static int32_t S_HVa;
-static int32_t S_LVa;
-#endif
-
 /******************************************************************************/
 
 /**
- * Elabora un comando; gestisce il parsing della sintassi ed esegue comandi
- * immediati o thread secondo la necessita`.
- * Torna 0 per successo o -1 per fallimento; diagnostica via log_.
- */
+* Processes a command; handles syntax parsing and executes immediate or threaded
+* commands as needed.
+* Returns 0 for success or -1 for failure; diagnostics via log_.
+*/
 ssize_t elaboraCmd(t_stato *p_stato, char *buffer, const char *cmd,
 		__attribute__ ((unused)) size_t nb)
 {
@@ -113,7 +104,7 @@ ssize_t elaboraCmd(t_stato *p_stato, char *buffer, const char *cmd,
 	bool found = FALSE;
 	t_cmd *pCmd;
 
-	/* Separa i parametri del comando */
+	/* Separate command parameters */
 	log_info("Cmd: %s",cmd);
 	ntok = argTok(cmd, tok, MAXPRO_TOK);
 	if (ntok < 0) {
@@ -125,7 +116,7 @@ ssize_t elaboraCmd(t_stato *p_stato, char *buffer, const char *cmd,
 
 	ret = 0;
 
-	/* Se non ci sono parametri esci silenziosamente */
+	/* If there are no parameters exit silently */
 	if (ntok < 1)
 		goto exitProc;
 
@@ -136,7 +127,7 @@ ssize_t elaboraCmd(t_stato *p_stato, char *buffer, const char *cmd,
 		if (strcmp(cmd, pCmd->cmd)!=0)
 			continue;
 
-		/* I comandi marcati idly sono bloccati in stato e_idle */
+		/* Commands marked idly are stuck in e_idle state */
 		if (pCmd->idly && get_state() == e_idle) {
 			log_warning("cmd=\"%s\" in idle", pCmd->cmd);
 
@@ -147,13 +138,13 @@ ssize_t elaboraCmd(t_stato *p_stato, char *buffer, const char *cmd,
 
 		nparwaited = 1 + (pCmd->async? 1: 0);
 		if (pCmd->npar == -1) {
-			/* Numero di parametri non specificato */
+			/* Number of parameters not specified */
 			if (strcmp(tok[ntok-1], "\\")==0)
 				p_stato->currCmd = pCmd;
 
-			/* Il compito di gestire (TUTTI) i parametri spetta alla
-			 * callback: esegui la funzione */
-			log_info("comando da processare: '%s' con %d parametri, usati %d",
+			/* The task of handling (ALL) parameters is up to the
+			* callback: execute the function */
+			log_info("command to process: '%s' with %d parameters, used %d",
 					cmd, ntok, ntok-nparwaited);
 			ret = pCmd->func(p_stato, pCmd, buffer,
 				(const char **) tok, ntok, 0);
@@ -168,13 +159,13 @@ ssize_t elaboraCmd(t_stato *p_stato, char *buffer, const char *cmd,
 			goto exitProc;
 		}
 
-		/* Numero di parametri specificato */
+		/* Number of parameters specified */
 		for  (x=0; x < ntok-nparwaited; x++)
 			tok2func[x] = tok[x+nparwaited];
 
 		cnt = -1;
 		if (pCmd->async) {
-			/* Ulteriore manipolazione: estrai il contatore */
+			/* Further manipulation: extract the counter */
 			if (tok[1][0] != '#') {
 				log_warning("cmd=\"%s\": missing \"#\" in counter", pCmd->cmd);
 
@@ -192,8 +183,8 @@ ssize_t elaboraCmd(t_stato *p_stato, char *buffer, const char *cmd,
 			}
 		}
 
-		/* esegui la funzione */
-		log_info("processato comando '%s' con %d parametri, usati %d",
+		/* run the function */
+		log_info("processed command '%s' with %d parameters, used %d",
 				cmd, ntok, ntok-nparwaited);
 		ret = pCmd->func(p_stato, pCmd, buffer,
 				(const char **) tok2func, ntok-nparwaited, cnt);
@@ -209,21 +200,21 @@ ssize_t elaboraCmd(t_stato *p_stato, char *buffer, const char *cmd,
 		goto exitProc;
 	}
 
-	/****** Procedure di uscita ***************/
+	/****** Exit procedures ***************/
 exitProc:
-	freeTok(tok, ntok);		/* libera memoria token */
+	freeTok(tok, ntok);		/* free token memory */
 	log_info("Exiting from command");
 
-	return ret;				/* torna esito */
+	return ret;				/* return result */
 }
 
 /******************************************************************************/
 
 /**server
- * Componi un banner per una nuova connessione.
- */
-ssize_t makeBanner(char *buffer, 		/* Buffer per la risposta */
-				   int32_t fd 				/* fd della connesione */)
+* Compose a banner for a new connection.
+*/
+ssize_t makeBanner(char *buffer, 		/* Answer Buffer */
+				   int32_t fd 				/* connection fd */)
 {
 	char tmps[MAXSTR];
 	enum e_state s = get_state();
@@ -235,22 +226,22 @@ ssize_t makeBanner(char *buffer, 		/* Buffer per la risposta */
 /******************************************************************************/
 
 /**
- * Componi una transizione di stato
- */
-ssize_t stateVar(char *buffer, 		/* Buffer per la risposta */
-				   enum e_state old, 	/* Stato precedente */
-				   enum e_state new 	/* Stato attuale */)
+* Compose a state transition
+*/
+ssize_t stateVar(char *buffer, 		/* Answer Buffer */
+				   enum e_state old, 	/* previous State */
+				   enum e_state new 	/* actual State */)
 {
 	return sprintf(buffer, "!CS %s %s", state_str(old), state_str(new));
 }
 
 /**
- * Componi un warning message
+ * Compose a warning message
  */
-ssize_t warningMsg(int32_t level,				/* Livello del warning */
-				   int32_t overwrite,			/* flag booleano "sovrascrivi" */
-				   enum e_errCod errcode,	/* Codice univoco di errore */
-				   char *buffer, 			/* Buffer per la risposta */
+ssize_t warningMsg(int32_t level,				/* Warning level */
+				   int32_t overwrite,			/* flag boolean "overwrite" */
+				   enum e_errCod errcode,	/* Error Code unique */
+				   char *buffer, 			/* Answer Buffer */
 				   const char *format,		/* Stringa di formato */
 				   ...)
 {
@@ -276,9 +267,9 @@ ssize_t warningMsg(int32_t level,				/* Livello del warning */
 /******************************************************************************/
 
 /**
- * Formatta una risposta del tipo richiesto.
- * Torna la lunghezza della stringa di risposta.
- */
+* Formats a response of the requested type.
+* Returns the length of the response string.
+*/
 size_t makeAnswer(char *buffer, 			/** Buffer per la risposta */
 				  enum e_modeType modeType, /** Modo /syn/asyn) */
 				  enum e_cmdType cmdType,	/** Tipo (ok/ko...) */
@@ -289,14 +280,14 @@ size_t makeAnswer(char *buffer, 			/** Buffer per la risposta */
 {
 	char header[MAXPRO_LCMD], tail[MAXPRO_LCMD], scnt[MAXSTR];
 
-	/* La coda puo` sempre esere presente: e` un commento */
+	/* The tail can always be present: it is a comment */
 	tail[0] = '\0';
 	if (msg != NULL)
 		strcpy(tail, msg);
 
-	/* Il tipo di comandi non dipende dal modo; semmai verra`
-	 * cambiato il primo carattere.
-	 */
+	/* The type of commands does not depend on the mode; if anything, the first character will be
+	* changed.
+	*/
 	switch (cmdType) {
 		case e_cmdOk:
 			strcpy(header, ANSOK);
@@ -316,9 +307,9 @@ size_t makeAnswer(char *buffer, 			/** Buffer per la risposta */
 			break;
 	}
 
-	/* Il modo condiziona il primo carattere e l'indicazione
-	 * del contatore; nei sincroni, quest'ultimo non c'e`.
-	 */
+	/* The mode conditions the first character and the indication
+	* of the counter; in synchronous, the latter is not present.
+	*/
 	switch (modeType) {
 		case e_cmdAsyncAck:
 			sprintf(scnt, " #%d", cnt);
@@ -342,9 +333,9 @@ size_t makeAnswer(char *buffer, 			/** Buffer per la risposta */
 			break;
 	}
 
-	/* L'uscita per superamento del buffer e` un fatto che non dovrebbe
-	 * mai verificarsi a runtime.
-	 */
+	/* Buffer overflow is something that should never
+	* happen at runtime.
+	*/
 	assert(strlen(header) + strlen(scnt) + 1 + strlen(tail) < MAXPRO_LCMD);
 
 	sprintf(buffer, "%s%s %s", header, scnt, tail);
@@ -352,13 +343,13 @@ size_t makeAnswer(char *buffer, 			/** Buffer per la risposta */
 }
 
 /******************************************************************************/
-/* Comandi del server														  */
+/* Server Commands															  */
 /******************************************************************************/
 
 /**
- * Stampa lo stato attuale.
- * Torna le dimensioni della risposta.
- */
+* Prints the current state.
+* Returns the size of the response.
+*/
 static ssize_t fCmd_nop(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						const char **tok, int32_t ntok, int32_t cnt)
 {
@@ -385,26 +376,24 @@ static ssize_t fCmd_nop(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 }
 
 /**
- * Esce dalla sessione corrente
- * Torna un codice che termina il processo.
- * N.B: la risposta viene comunque generata nel buffer. Il chiamante puo`
- * 		conoscere la lunghezza con la strlen.
- */
+* Exits the current session
+* Returns a code that terminates the process.
+* N.B: the response is still generated in the buffer. The caller can
+* know the length with the strlen.
+*/
 static ssize_t fCmd_quit(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						const char **tok, int32_t ntok,	int32_t cnt)
 {
 	assert(ntok == 0);
 
-	/* occorre fermare tutte le attivita` del cliente corrente; questo
-	 * viene fatto dal chiamante */
+	/* all current client activity needs to be stopped; this is done by the caller */
 	(void)p_stato;
 	(void)pCmd;
 	(void)tok;
 	(void)ntok;
 	(void)cnt;
 
-	/* Non e` elegante: la risposta viene creata ma non viene ritornata la
-	 * dimensione */
+	/* This is not elegant: the response is created but the size is not returned */
 	(void)makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, "Quitting", -1, 0);
 	return NEED_TO_CLOSE;
 }
@@ -412,10 +401,10 @@ static ssize_t fCmd_quit(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 
 
 /**
- * Mostra informazioni sul server..
- * Torna le dimensioni della risposta.
- *
- */
+* Show server information.
+* Returns the response size.
+*
+*/
 static ssize_t fCmd_info(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						 const char **tok, int32_t ntok, int32_t cnt)
 {
@@ -425,7 +414,7 @@ static ssize_t fCmd_info(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 
 	assert(ntok == 0);
 
-	/* Non sono utilizzati */
+	/* Not used */
 	(void)tok;
 	(void)ntok;
 	(void)cnt;
@@ -435,7 +424,7 @@ static ssize_t fCmd_info(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	while ((p = stato_iter(&iter)) != NULL) {
 		char task[MAXSTR];
 
-		/* Raccogli i dati sui task evitando le race conditions */
+		/* Collect task data avoiding race conditions */
 		pthread_mutex_lock(&(p->t.mutex));
 		if (p->t.valid)
 			sprintf(task, "[%d]\"%s\"", p->t.cnt, p->t.pCmd->cmd);
@@ -443,7 +432,7 @@ static ssize_t fCmd_info(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 			sprintf(task, "[-](none)");
 		pthread_mutex_unlock(&(p->t.mutex));
 
-		/* Stato del canale */
+		/* Channel status */
 		if (!btst(p->options, O_INTERNAL)) {
 			int32_t delta = (int32_t)(mtimes()- p->last_t);
 			size_t nb;
@@ -462,7 +451,7 @@ static ssize_t fCmd_info(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 		j++;
 	}
 
-	/* Conclusione del comando */
+	/* Command end */
 	ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, "Done", -1, 0);
 
 	return ret;
@@ -471,9 +460,9 @@ static ssize_t fCmd_info(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 /*----------------------------------------------------------------------------*/
 
 /**
- * Scrive nella PGA il comando di hardware reset. Richiede due parametri: indirizzo e dato.
- * Torna le dimensioni della risposta.
- */
+* Writes the hardware reset command to the PGA. Requires two parameters: address and data.
+* Returns the size of the response.
+*/
 static ssize_t fCmd_hwreset(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						const char **tok, int ntok, int cnt)
 {
@@ -496,9 +485,9 @@ static ssize_t fCmd_hwreset(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 
 
 /**
- * Scrive un dato nella PGA. Richiede due parametri: indirizzo e dato.
- * Torna le dimensioni della risposta.
- */
+* Writes a data to the PGA. Requires two parameters: address and data.
+* Returns the size of the response.
+*/
 static ssize_t fCmd_poke(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						const char **tok, int32_t ntok, int32_t cnt)
 {
@@ -523,7 +512,7 @@ static ssize_t fCmd_poke(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	sscanf(tok[1], "%X", &data);
 	data &= 0x0000FFFF;
 
-	/* Scrivi con il wrapper fpga.cpp */
+	/* write with the wrapper fpga.cpp */
 	if (fpga_poke((fpga_addr_t)addr, data) != 0) {
 		log_error("poke %08X %08X failed", addr, data);
 		ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
@@ -537,9 +526,9 @@ static ssize_t fCmd_poke(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 /*----------------------------------------------------------------------------*/
 
 /**
- * Legge un dato dalla PGA. Richiede un parametro: indirizzo.
- * Torna le dimensioni della risposta.
- */
+* Reads data from PGA. Requires one parameter: address.
+* Returns the size of the response.
+*/
 static ssize_t fCmd_peek(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						const char **tok, int32_t ntok, int32_t cnt)
 {
@@ -554,7 +543,7 @@ static ssize_t fCmd_peek(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	(void) ntok;
 	(void) cnt;
 
-	/* Se il parametro e` "*", stampa tutti i registri */
+	/* If the parameter is "*", print all registers */
 	if (strcmp(tok[0], "*") == 0) {
 		int32_t state = 0;
 		const char *p;
@@ -578,7 +567,7 @@ static ssize_t fCmd_peek(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 												"bad address", -1, e_errParam);
 		}
 
-		/* Leggi con il wrapper fpga.cpp */
+		/* read with the wrapper fpga.cpp */
 		fpga_data_t data;
 		if ((data = fpga_peek((fpga_addr_t)addr)) < 0) {
 			log_error("peek %08X: failed", addr);
@@ -596,10 +585,10 @@ static ssize_t fCmd_peek(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 /*----------------------------------------------------------------------------*/
 
 /**
- * Legge un buffer dalla PGA. Richiede due parametri: indirizzo base e
- * n.di parole.
- * Torna le dimensioni della risposta.
- */
+* Reads a buffer from the PGA. Requires two parameters: base address and
+* #of words.
+* Returns the size of the response.
+*/
 static ssize_t fCmd_read(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						const char **tok, int32_t ntok, int32_t cnt)
 {
@@ -643,7 +632,7 @@ static ssize_t fCmd_read(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 
 	buf = (uint32_t *) malloc(sizeof(uint32_t) * (count));
 
-	/* Leggi con il wrapper fpga.cpp */
+	/* read with the wrapper fpga.cpp */
 	if (fpga_read(base/4, buf, count) < 0) {
 		log_error("read: read(%08X,%08X) failed", base, (count+base)*4);
 		ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
@@ -681,16 +670,16 @@ static ssize_t fCmd_read(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 /*----------------------------------------------------------------------------*/
 
 /**
- * Riempie un'area di memoria della PGA. Richiede due parametri:
- * indirizzo base e pattern da scrivere.
- * L'indirizzo e` della forma:
- * base[:end] (es: 10000:10FFF).
- * Il pattern e` della forma:
- * word[*count] (es. DEADBEEF*100)
- * Tutti i numeri sono in esadecimale. Nel caso si specifichino sia
- * base:end che count, non viene comunque superato end.
- * Torna le dimensioni della risposta.
- */
+* Fills a memory area of ​​the PGA. Requires two parameters:
+* base address and pattern to write.
+* The address is of the form:
+* base[:end] (e.g. 10000:10FFF).
+* The pattern is of the form:
+* word[*count] (e.g. DEADBEEF*100)
+* All numbers are in hexadecimal. If both
+* base:end and count are specified, end is not exceeded.
+* Returns the size of the response.
+*/
 static ssize_t fCmd_fill(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						const char **tok, int32_t ntok, int32_t cnt)
 {
@@ -737,11 +726,7 @@ static ssize_t fCmd_fill(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	if (count == 0 || (end > base && count > end - base + 1))
 		count = end - base + 1;
 
-//	if ((count % 0x200) != 0) {
-//		log_warning("fill: invalid block size (%08X)", count);
-//		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
-//										"invalid block size", -1, e_errParam);
-//	}
+
 	if (((count*sizeof(uint32_t)) + base) > SRAM_IP_BASEADDR) {
 		log_warning("fill: end address toot high (%08X)", (count*4)+base);
 		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
@@ -753,7 +738,7 @@ static ssize_t fCmd_fill(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	for (j=0; j<count; j++)
 		buf[j] = pattern;
 
-	/* Scrivi con il wrapper fpga.cpp */
+	/* write with the wrapper fpga.cpp */
 	if (fpga_write(base/4, buf, count) < 0) {
 		log_error("fill: write(%08X,%08X) failed", base, (count*4)+base);
 		ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
@@ -771,16 +756,16 @@ static ssize_t fCmd_fill(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 /*----------------------------------------------------------------------------*/
 
 /**
- * Scrive un buffer nella PGA. Richiede un indirizzo e
- * una serie di valori esadecimali.
- * Se la serie non puo` concludersi in un singolo mesaggio
- * perche' ci sono troppi valori, allora il primo mesaggio
- * termina con '\' e i successivi iniziano con '+'.
- * Se il numero di byte da scrivere non e` un multiplo
- * di 512, il numero viene arotondato al multiplo di 512
- * successivo e il buffer viene paddato con 0.
- * Torna le dimensioni della risposta.
- */
+* Writes a buffer to the PGA. Requires an address and
+* a series of hexadecimal values.
+* If the series cannot be completed in a single message
+* because there are too many values, then the first message
+* ends with '\' and subsequent messages start with '+'.
+* If the number of bytes to write is not a multiple
+* of 512, the number is rounded up to the next multiple of 512
+* and the buffer is padded with 0.
+* Returns the size of the response.
+*/
 static ssize_t fCmd_write(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						const char **tok, int32_t ntok, int32_t cnt)
 {
@@ -788,7 +773,7 @@ static ssize_t fCmd_write(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	uint32_t val, base;
 	int32_t n;
 
-	/* Questo comando ha un numero variabile di parametri */
+	/* This command has a variable number of parameters. */
 	if (ntok <= 0) {
 		ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
 									"not enough parameters", -1, e_errSyntax);
@@ -799,7 +784,7 @@ static ssize_t fCmd_write(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	(void)cnt;
 
 	if (strcmp(tok[0], "write") == 0) {
-		/* primo messaggio */
+		/* first messagge */
 		int32_t j;
 
 		n = sscanf(tok[1], "%x", &base);
@@ -834,7 +819,7 @@ static ssize_t fCmd_write(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 		}
 	}
 	else if (strcmp(tok[0], "+") == 0) {
-		/* Messaggi successivi */
+		/* Next Messagges */
 		int32_t j;
 
 		for (j = 1; j < ntok; j++) {
@@ -852,7 +837,7 @@ static ssize_t fCmd_write(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 		}
 	}
 	else {
-		/* errore */
+		/* error */
 		log_warning("write: invalid message (%s)", tok[0]);
 		ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
 											"invalid message", -1, e_errSyntax);
@@ -860,16 +845,16 @@ static ssize_t fCmd_write(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	}
 
 	if (equal(tok[ntok-1], "\\")) {
-		/* Prosegui senza passare da errore */
+		/* Continue without passing from error */
 		ret = 0;
 		return ret;
 	}
 	else {
-		/* Ultimo messaggio: scrivi */
+		/* Last messagge: write */
 		uint32_t buf[DATA_BUFFER_SIZE];
 		uint32_t j, count;
 
-		/* Recupera le info */
+		/* collecting info */
 		base = p_stato->base;
 		count = p_stato->count;
 
@@ -883,9 +868,7 @@ static ssize_t fCmd_write(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 		for (j=0; j<count; j++)
 			buf[j] = 0xFFFFFFFF & p_stato->data[j];
 
-		/* Comunque vada, resetta lo stato */
-
-		/* Scrivi con il wrapper fpga.cpp */
+		/* write with the wrapper fpga.cpp */
 		if (fpga_write(base/4, buf, count) < 0) {
 			log_error("write: write(%08X,%08X) failed", base, base+count);
 			ret = makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
@@ -908,9 +891,9 @@ end_reset:
 /*----------------------------------------------------------------------------*/
 
 /**
- * Mette il server in idle
- * Torna le dimensioni della risposta.
- */
+* Idles the server
+* Returns the size of the response.
+*/
 static ssize_t fCmd_idle(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						const char **tok, int32_t ntok, int32_t cnt)
 {
@@ -924,18 +907,18 @@ static ssize_t fCmd_idle(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	(void) tok;
 	(void) cnt;
 
-	/* funziona sempre! */
+	/* always work! */
 	set_state(e_idle);
 
-	/* Ack del comando */
+	/* Ack of the command */
 	ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, "going idle", -1, -1);
 	return ret;
 }
 
 /**
- * Funzione di simulazione del comando abort.
- * Torna le dimensioni della risposta.
- */
+* Abort command simulation function.
+* Returns the size of the response.
+*/
 static ssize_t fCmd_abort(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						const char **tok, int32_t ntok, int32_t cnt)
 {
@@ -950,18 +933,18 @@ static ssize_t fCmd_abort(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	(void) cnt;
 
 	explain_error("Status just before abort: ");
-	//inizio l'abort
+	//abort init
 
 	switch (get_state()) {
 	case e_ready:
 		log_info("ABORT in ready");	// XXX
 		break;
 	default:
-		// In tutti gli altri casi si comporta come una no-op */
+		// In all other cases it behaves like a no-op */
 		break;
 	}
 
-	/* Ack del comando */
+	/* Ack of the command */
 	ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, "Abort activated", -1, -1);
 	return ret;
 }
