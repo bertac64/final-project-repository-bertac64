@@ -2,7 +2,7 @@
  * epxcore.h -	main header file of the server; defines costants, types and
  * 				general purpose functions.
  *
- * (C) 2024 Igea SpA
+ * (C) 2024 bertac64
  *
  */
 

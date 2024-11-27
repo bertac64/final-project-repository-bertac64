@@ -84,7 +84,7 @@ int64_t memopen(uint32_t rambase, size_t dim){
 	int64_t retval = 0;
 
 	base = (off_t)rambase & PG_MASK;
-	printf("MMAP : %08lX : %08lX\n", (long unsigned int)base, dim); fflush(stdout);
+	printf("MMAP : %08zX : %08zX\n", (long unsigned int)base, dim); fflush(stdout);
 
 	/* opening the file descriptor to get access tyo the memory */
 	SRAM.fd_mem = open("/dev/mem", O_RDWR);
@@ -96,7 +96,7 @@ int64_t memopen(uint32_t rambase, size_t dim){
 	mm = (volatile uint32_t *)mmap(NULL, (size_t)(dim), PROT_READ|PROT_WRITE, MAP_SHARED,
 			SRAM.fd_mem, base );
 	if (mm == MAP_FAILED) {
-		printf("mmap64(0x%lx@0x%lx) failed (%d:%s)\n",
+		printf("mmap64(0x%zx@0x%zx) failed (%d:%s)\n",
 				dim, (long unsigned int)base, errno, strerror(errno));
 		retval = -1;
 	}

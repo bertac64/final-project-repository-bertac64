@@ -1,6 +1,6 @@
 /**
- * middle.c - funzioni "middleware" tra i comandi di command.c/bite.c e
- * 				il basso livello di fpga.cpp.
+ * middle.c - "middleware" functions between commands and the
+ * 				low level of fpga.cpp.
  *
  * (C) 2024 bertac64
  *

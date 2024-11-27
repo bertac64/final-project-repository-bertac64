@@ -1,7 +1,7 @@
 /**
- * util.h - Header delle funzioni di utilita`
+ * util.h - Header of utility functions
  *
- * (C) 2008 GGH srl per Igea SpA
+ * (C) bertac64
  *
  */
 #ifndef UTIL_H

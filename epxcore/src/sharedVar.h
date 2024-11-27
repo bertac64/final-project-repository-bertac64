@@ -1,7 +1,7 @@
 /**
- * sharedVar.h - Header per la gestiuone delle variabili condivise tra thread.
+ * sharedVar.h - Header for the threasd shared variables.
  *
- * (C) 2008 GGH Srl per Igea SpA
+ * (C) bertac64
  *
  */
 #ifndef SHAREDVAR_H_

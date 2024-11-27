@@ -537,3 +537,43 @@ int chrono_stop(void)
 	ms += (tv.tv_sec - S_tv.tv_sec)*1000;
 	return ms;
 }
+
+
+/****************************************************************************/
+/** Identificazione piattaforma */
+
+/**
+ *	DESCRIZIONE
+ * 		Fa partire il cronometro.
+ *	NOTE
+ *		Non e` thread-safe
+ */
+const char * get_cputype(char *buffer)
+{
+#ifdef UNAME2
+	struct utsname uts;
+	
+	if (uname(&uts) != 0)
+		return NULL;
+
+	strcpy(buffer, uts.machine);
+#else
+	printf("get_cputype\n");
+	FILE *fp = popen("/bin/uname -m", "r");
+	if (fp == NULL) {
+		printf("get_cputype can't load %s\n", strerror(errno));
+		return NULL;
+	}
+
+	char z[1024];
+	z[0] = 0;
+	(void)fgets(z, sizeof(z), fp);
+	(void)pclose(fp);
+
+	int j;
+	for (j=0; z[j] && z[j] != '\n'; j++)
+		buffer[j] = z[j];
+	buffer[j] = 0;
+#endif
+	return buffer;
+}

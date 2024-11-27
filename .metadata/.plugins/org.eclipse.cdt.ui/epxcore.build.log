@@ -1,0 +1,70 @@
+11:25:35 **** Build of configuration Debug for project epxcore ****
+make all 
+Building file: ../src/command.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/command.d" -MT"src/command.o" -o "src/command.o" "../src/command.c"
+Finished building: ../src/command.c
+ 
+Building file: ../src/driver.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/driver.d" -MT"src/driver.o" -o "src/driver.o" "../src/driver.c"
+Finished building: ../src/driver.c
+ 
+Building file: ../src/epxcore.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/epxcore.d" -MT"src/epxcore.o" -o "src/epxcore.o" "../src/epxcore.c"
+Finished building: ../src/epxcore.c
+ 
+Building file: ../src/fpga.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/fpga.d" -MT"src/fpga.o" -o "src/fpga.o" "../src/fpga.c"
+Finished building: ../src/fpga.c
+ 
+Building file: ../src/main.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/main.d" -MT"src/main.o" -o "src/main.o" "../src/main.c"
+Finished building: ../src/main.c
+ 
+Building file: ../src/middle.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/middle.d" -MT"src/middle.o" -o "src/middle.o" "../src/middle.c"
+Finished building: ../src/middle.c
+ 
+Building file: ../src/sharedVar.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/sharedVar.d" -MT"src/sharedVar.o" -o "src/sharedVar.o" "../src/sharedVar.c"
+Finished building: ../src/sharedVar.c
+ 
+Building file: ../src/util.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/util.d" -MT"src/util.o" -o "src/util.o" "../src/util.c"
+Finished building: ../src/util.c
+ 
+Building file: ../liblog/log.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"liblog/log.d" -MT"liblog/log.o" -o "liblog/log.o" "../liblog/log.c"
+Finished building: ../liblog/log.c
+ 
+Building file: ../libep/ep.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"libep/ep.d" -MT"libep/ep.o" -o "libep/ep.o" "../libep/ep.c"
+Finished building: ../libep/ep.c
+ 
+Building file: ../libep/util.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"libep/util.d" -MT"libep/util.o" -o "libep/util.o" "../libep/util.c"
+Finished building: ../libep/util.c
+ 
+Building file: ../.metadata/.plugins/org.eclipse.cdt.make.core/specs.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF".metadata/.plugins/org.eclipse.cdt.make.core/specs.d" -MT".metadata/.plugins/org.eclipse.cdt.make.core/specs.o" -o ".metadata/.plugins/org.eclipse.cdt.make.core/specs.o" "../.metadata/.plugins/org.eclipse.cdt.make.core/specs.c"
+Finished building: ../.metadata/.plugins/org.eclipse.cdt.make.core/specs.c
+ 
+Building target: epxcore
+Invoking: GCC C Linker
+gcc -L../liblog/liblog.a -L../libep/libep.a -o "epxcore"  ./src/command.o ./src/driver.o ./src/epxcore.o ./src/fpga.o ./src/main.o ./src/middle.o ./src/sharedVar.o ./src/util.o  ./liblog/log.o  ./libep/ep.o ./libep/util.o  ./.metadata/.plugins/org.eclipse.cdt.make.core/specs.o    -lpthread
+Finished building target: epxcore
+ 
+
+11:25:36 Build Finished. 0 errors, 0 warnings. (took 571ms)
+

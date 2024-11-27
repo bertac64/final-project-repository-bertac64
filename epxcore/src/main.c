@@ -31,7 +31,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-/* Librerie locali */
+/* Local Libraries */
 #include "../libep/libep.h"
 #include "../liblog/log.h"
 
@@ -48,31 +48,29 @@
 #define SYS_TIDLE = 172800
 
 /* ========================================================================= */
-/* Globali al progetto */
+/* Global variables */
 
-int G_flgVerbose = 0;		/* livello di verbosita` per log e debug */
-int G_thPipe[2];			/* Comunicazione da task a main thread */
-t_map * G_map = NULL;		/* Mappa delle properties */
-char *G_fname_map = NULL;	/* Nome del file di properties */
+int G_flgVerbose = 0;		/* verbose level for log and debug */
+int G_thPipe[2];			/* Communication pipe from task to main thread */
 Memory SRAM;
 volatile uint32_t *mm;
 time_t valm_f = 0;
 int va_th = 0;
-
+int noFPGA = 0;
 /* ========================================================================= */
 /* Static globals */
 
 static long S_poll_tout_us = 500000; /* timeout poll (usec) */
 static short S_asport = SRV_PORT;	 /* well-known port del server */
 static int S_conn_tout = 600000;	 /* timeout connessione (msec) */
-static int S_maxfd;					 /* N. max di fd gestiti in select */
+static int S_maxfd;					 /* max N. of fd managed in select */
 static int S_aserfd;				 /* fd del server (cfr. asport) */
 static int S_pipefd;				 /* Estremita` in lettura della pipe */
 static int S_tomainfd;				 /* Estremita` in scrittura della pipe */
 static fd_set S_allset;				 /* fd gestiti da select */
 
 /* ========================================================================= */
-/* Prototipi interni */
+/* Internal Prototypes */
 
 static void sig_trap(int sig);
 static void sig_pipe(int sig);
@@ -81,11 +79,11 @@ static void before_exit(void);
 static void f_cleanup(void);
 
 /* ========================================================================= */
-/* Tabella delle azioni da fare su timeout */
+/* Actions table to be done at timeout */
 
 static t_actions S_actions[] = {
-    /*   name	tout 	funzione	Intervallo di poll (in ms) */
-	{ "CLN",	0,		f_cleanup,	86400000 },	/* Calcolo timeout connessione (1giorno) */
+    /*   name	tout 	funzione	polling interval (in ms) */
+	{ "CLN",	0,		f_cleanup,	86400000 },	/* timeout connection (1 day) */
 	{ NULL,		0, 		NULL, 		0 }		/* Tappo */
 };
 
@@ -95,7 +93,7 @@ static t_actions S_actions[] = {
 /*****************************************************************************/
 
 /**
- * Stampa l'usage del programma e esce con errore (exitcode=1).
+ * Program usage print. Exit with error (exitcode=1).
  */
 void usage(const char *prgname, const char *s)
 {
@@ -112,7 +110,7 @@ void usage(const char *prgname, const char *s)
 /* ========================================================================= */
 
 /**
- * main del programma (POSIX.1)
+ * main of the program (POSIX.1)
  */
 int main(int argc, char **argv)
 {
@@ -122,12 +120,8 @@ int main(int argc, char **argv)
 	fd_set rset;
 	opterr = 0;
 
-	while ((c = getopt(argc, argv, "d:hvp:")) != -1) {
+	while ((c = getopt(argc, argv, "d:hv:")) != -1) {
 		switch (c) {
-		case 'p':
-			G_fname_map = optarg;
-			break;
-
 		case 'd':
 			G_flgVerbose = atoi(optarg);
 			break;
@@ -150,9 +144,9 @@ int main(int argc, char **argv)
 	if (argc-optind != 0)
 		usage(PRGNAME, "Too many parateters");
 
-	/* Inizializzazione log */
+	/* Initialization log */
 	log_init(PRGNAME);
-	log_delout(stderr); /* rimuovi stderr abilitato di default */
+	log_delout(stderr); /* remove stderr enabled by default */
 
 	if (G_flgVerbose > 0) {
 		switch (G_flgVerbose) {
@@ -180,18 +174,21 @@ int main(int argc, char **argv)
 	signal(SIGPIPE, sig_pipe);
 	signal(SIGCHLD, sig_chld);
 
-	/* Inizializzazioni varie */
+	/* Initializations */
 	epsmdrv_open();
 	stato_init();
 	init_timer();
 
-	/* Inizializza le variabili condivise (stato, ...) */
+	/* Initialization of shared variables (status, ...) */
 	initSharedVar();
 
-	if (start_power(FALSE) < 0)
-		return 1;
+	/* check fpga presence */
+	if (start_power(FALSE) < 0){
+		log_info("FPGA not connected!");
+		noFPGA = 1;
+	}
 
-	/* Fai partire il thread di aggiornamento dello stato */
+	/* Start the status update thread */
 	if (pthread_create(&stato_th, NULL, eval_state, NULL) < 0) {
 		log_perror("can't create thread for FPGA polling");
 		return 1;
@@ -200,14 +197,14 @@ int main(int argc, char **argv)
 	msleep(100);
 	set_state(e_blank);
 
-	log_debug("Azzero i descrittori di canale");
-	/* Azzera i descrittori di canale */
+	log_debug("Cleaning channel descriptors");
+	/* Clear channel descriptors */
 	FD_ZERO(&rset);
 	FD_ZERO(&S_allset);
 
-	log_debug("Apro il canale di comunicazione");
-	/*** Configurazione canali server ***/
-	/* Configura il canale passivo */
+	log_debug("Opening communication channel");
+	/*** Server channels Configuration ***/
+	/* Passive channel configuration */
 	S_aserfd = ch_conf(S_asport);
 	(void)stato_add(S_aserfd, O_INTERNAL);
 	FD_SET(S_aserfd, &S_allset);
@@ -216,7 +213,7 @@ int main(int argc, char **argv)
 	log_debug("Starting on port [%d] accepting %d clients", S_asport,
 			MAXPRO_CLI);
 
-	/* creiamo la pipe per il canale dai thread */
+	/* creating the pipe for the channel from threads */
 	if (pipe(G_thPipe) < 0) {
 		log_perror("can't create pipe from thread");
 		exit(1);
@@ -230,8 +227,8 @@ int main(int argc, char **argv)
 
 	log_debug("Internal pipe created on fd [%d->%d]", S_pipefd, S_tomainfd);
 
-	/* Loop principale (infinito) */
-	log_debug("entro in select ----------------");
+	/* Main Loop (infinite) */
+	log_debug("entering in select ----------------");
 
 	while (1) {
 		char chunk[MAXPRO_LCMD], cmd[MAXPRO_LCMD], stmp[MAXSTR];
@@ -252,24 +249,24 @@ int main(int argc, char **argv)
 				log_fatal("select: %s", strerror(errno));
 		}
 
-		/* *** Gestione dei timeout *** */
+		/* *** timeout management *** */
 
-		/* Scandisci la tabella delle azioni da fare in timeout */
+		/* check tabel of actions to be done during timeout */
 		for (j=0; S_actions[j].f != NULL; j++) {
 			t_mclock tnow = mtimes();
 
 			if (tnow > S_actions[j].tout) {
 
-				/* N.B: si presuppone che il tempo di servizio dell'azione
-				 * sia INFERIORE al tempo di rischedulazione. Altrimenti
-				 * l'azione puo' andare in starvation.
-				 */
+				/* N.B: it is assumed that the action service time
+				* is LESS than the rescheduling time. Otherwise
+				* the action may starvation.
+				*/
 				S_actions[j].f();
 
-				/* Puo' capitare che come effetto dell'azione, uno o
-				 * piu' canali vengano chiusi. Occorre fare una verifica
-				 * a livello di select().
-				 */
+				/* It may happen that as a result of the action, one or
+				* more channels are closed. A check must be made
+				* at the select() level.
+				*/
 				iter = 0;
 				while ((p_stato = stato_iter(&iter)) != NULL) {
 					if (btst(p_stato->options, O_MUST_CLOSE)) {
@@ -283,23 +280,23 @@ int main(int argc, char **argv)
 					}
 				}
 
-				/* calcola la prossima scadenza di timeout */
+				/* calculates the next timeout expiration */
 				S_actions[j].tout = tnow + (t_mclock)S_actions[j].delay;
 			}
 		}
 
-		/* Uscito per timeout: rientra in poll */
+		/* Exited due to timeout: re-enter poll */
 		if (nready == 0)
 			continue;
 
-		/* uscito per evento regolare */
-		log_debug( "risveglio da select ------------");
+		/* Exited due regular event */
+		log_debug( "wakeup from select ------------");
 
-		/* controlla tutti i canali */
+		/* checking all channels */
 
-		/* canale passivo del server --------------------------------------- */
+		/* passive channel of the server --------------------------------------- */
 		if (FD_ISSET(S_aserfd, &rset)) {
-			/* Richiesta di connessione */
+			/* Connection request */
 
 			struct sockaddr_in cliaddr;
 			socklen_t clilen;
@@ -310,13 +307,13 @@ int main(int argc, char **argv)
 				log_fatal("accept: %s", strerror(errno));
 
 			if (stato_add(s, 0) < 0) {
-				/* Non ce ne sono */
+				/* No requests */
 				log_debug("*** NEW connection rejected: "
 												"too many (%d) clients", j);
 				close(s);
 			}
 			else {
-				/* Trovato */
+				/* Found request */
 				if (s > S_maxfd)
 					S_maxfd = s;
 				log_debug("NEW connection accepted "
@@ -325,17 +322,17 @@ int main(int argc, char **argv)
 				FD_SET(s, &S_allset);
 			}
 
-			/* Manda il banner */
+			/* Send the banner */
 			nb = makeBanner(cmd, s);
 			if (nb > 0){
 				write2client(s, cmd, nb);
 			}else
-				log_error("Banner non inviato");
+				log_error("Banner not sent");
 			if (--nready <=0)
 				continue;
 		}
 
-		/* Clienti --------------------------------------------------------- */
+		/* Clients --------------------------------------------------------- */
 		iter = 0;
 		while ((p_stato = stato_iter(&iter)) != NULL) {
 			s = p_stato->fd;
@@ -343,10 +340,10 @@ int main(int argc, char **argv)
 				continue;
 
 			if (FD_ISSET(s, &rset)) {
-				/* Leggi il chunk */
+				/* reading chunk */
 				nb = Read(s, chunk, sizeof(chunk));
 				if (nb <= 0) {
-					/* Hangup da cliente */
+					/* Hangup from client */
 					if (nb < 0) {
 						log_debug( "read: %s", strerror(errno));
 					}
@@ -360,25 +357,25 @@ int main(int argc, char **argv)
 				else {
 					char *p;
 
-					log_debug( "letti %d bytes", nb);
+					log_debug( "reading %d bytes", nb);
 					if (isdebug()) {
-						printf("Ricevuti i segg. bytes:\n");
+						printf("Received the following bytes:\n");
 						log_dump(chunk, nb);
 					}
 
-					/* Assembla un comando (cmd) completo */
+					/* Assembly of a complete command (cmd) */
 					p = chunk;
 					while ((nb = abcr(p_stato, p, nb, cmd, sizeof(cmd))) > 0) {
-						/* e' arrivato un mesaggio sulla main pipe ? */
+						/* messagge coming on the main pipe ? */
 						if (s == S_pipefd) {
 							strncpy(stmp, cmd, CLIENTHEADER);
 							stmp[CLIENTHEADER] = '\0';
 							sscanf(stmp, "%x", (unsigned int *)&clientFd);
 
-							/* nel frattempo il cliente potrebbe essere morto */
+							/* in the meantime the customer could be dead */
 							t_stato *p_cli = stato_getbyfd(clientFd);
 							if (p_cli != NULL) {
-								/* Manda la risposta */
+								/* send the answer */
 								if (write2client(clientFd, cmd+CLIENTHEADER,
 														nb-CLIENTHEADER) < 0) {
 
@@ -387,16 +384,16 @@ int main(int argc, char **argv)
 								}
 							}
 							else {
-								/* Consuma silenziosamente */
+								/* silently work */
 								;
 							}
 						}
 						else {
-							/* E` un cliente ordinario: esegui il comando */
+							/* It's an ordinary client: run the command */
 							char buffer[MAXPRO_LCMD];
 							nb = elaboraCmd(p_stato, buffer, cmd, nb);
 
-							// Se richiesto, logga il comando ricevuto
+							// If prompted, log the received command
 							log_warning("[%s]:\"%s\"",
 											state_str(get_state()), cmd);
 
@@ -406,7 +403,7 @@ int main(int argc, char **argv)
 								stato_close(p_stato);
 							}
 							else {
-								/* Manda la risposta */
+								/* send the answer */
 								if (nb > 0) {
 									if (write2client(s, buffer, nb) < 0) {
 										FD_CLR(p_stato->fd, &S_allset);
@@ -421,17 +418,17 @@ int main(int argc, char **argv)
 					}
 
 					if (nb < 0) {
-						/* Errore di protocollo, si chiude il canale */
+						/* Protocol error, closing the channel */
 						stato_close(p_stato);
 						log_warning("protocol error");
 					}
 					else if (nb == 0) {
-						/* Dati accettati, ma il pacchetto non e' completo */
-						log_debug( "abcr ritorna 0");
+						/* Data accepted, but the package is not complete */
+						log_debug( "abcr returns 0");
 					}
 				}
 
-				/* Aggiorna il tempo di timeout */
+				/* Update timeout time */
 				if (p_stato->fd >= 0)
 					p_stato->last_t = mtimes();
 			}
@@ -440,10 +437,10 @@ int main(int argc, char **argv)
 				continue;
 		}
 
-		log_debug( "rientro in poll ----------------------");
+		log_debug( "re entering in poll ----------------------");
 	}
 
-	epcoredrv_close();
+	epsmdrv_close();
 	close(SRAM.fd_mem);
 	return 0;
 }
@@ -451,9 +448,9 @@ int main(int argc, char **argv)
 /*****************************************************************************/
 
 /**
- * Invia un messaggio al cliente identificato da fd.
- * Ritorna il numero di caratteri scritti per successo, -1+errno per fallimento.
- */
+* Send a message to the client identified by fd.
+* Returns the number of characters written for success, -1+errno for failure.
+*/
 ssize_t write2client(int fd, const char *answer, size_t nb)
 {
 	ssize_t ret = 0;
@@ -462,15 +459,15 @@ ssize_t write2client(int fd, const char *answer, size_t nb)
 
 	//log_info("ANS: %s", answer);	
 	if ((nb > 0)&&(nb<=1024)){
-		/* Imbusta la risposta */
+		/* cook the answer */
 		len = cook(buffer, answer, nb);
 
-		/* Manda la risposta */
+		/* send the answer */
 		ret = Writen(fd, buffer, len);
 		if (ret < 0)
 			log_warning("write2client(): %s", strerror(errno));
 		else
-			log_debug("scritti %d bytes", ret);
+			log_debug("written %d bytes", ret);
 	}else{
 		ret = (-1);
 		log_error("wrong message length: %d", nb);
@@ -482,13 +479,13 @@ ssize_t write2client(int fd, const char *answer, size_t nb)
 /*****************************************************************************/
 
 /**
- * DESCRIZIONE
- * 	Invia un messaggio al main thread (server). Ad uso dei thread comandi.
- * 	La funzione e` sincronizzata.
- *
- * VALORI DI RITORNO
- * 	Ritorna il numero di caratteri scritti per successo, -1+errno per fallimento.
- */
+* DESCRIPTION
+* Sends a message to the main thread (server). For use by command threads.
+* The function is synchronized.
+*
+* RETURN VALUES
+* Returns the number of characters written for success, -1+errno for failure.
+*/
 static pthread_mutex_t S_writeMutex = PTHREAD_MUTEX_INITIALIZER;
 
 ssize_t write2main(const char *answer, size_t nb, size_t fd)
@@ -498,10 +495,10 @@ ssize_t write2main(const char *answer, size_t nb, size_t fd)
 
 	pthread_mutex_lock(&S_writeMutex);
 
-	sprintf(buffer, "%0*lX", CLIENTHEADER, fd);
-	nb = cook(buffer+CLIENTHEADER, answer, nb); 	/* Imbusta la risposta */
+	sprintf(buffer, "%0*zX", CLIENTHEADER, fd);
+	nb = cook(buffer+CLIENTHEADER, answer, nb); 	/* cook the answer */
 
-	/* Manda la risposta */
+	/* send the answer */
 	ret = Writen(S_tomainfd, buffer, nb+CLIENTHEADER);
 
 	if (ret < 0)
@@ -515,9 +512,9 @@ ssize_t write2main(const char *answer, size_t nb, size_t fd)
 }
 
 /**
- * Invia un messaggio al main thread (server), destinato a TUTTI i clienti.
- * Ritorna il numero di caratteri scritti per successo, -1+errno per fallimento.
- */
+* Sends a message to the main thread (server), intended for ALL clients.
+* Returns the number of characters written for success, -1+errno for failure.
+*/
 static pthread_mutex_t S_writeAllMutex = PTHREAD_MUTEX_INITIALIZER;
 
 void write2mainAll(const char *answer, size_t nb)
@@ -538,15 +535,15 @@ void write2mainAll(const char *answer, size_t nb)
 /*****************************************************************************/
 
 /**
- * DESCRIZIONE
- * 	Lettura dello stato corrente.
- *
- * VALORI DI RITORNO
- * 	Lo stato corrente
- *
- * NOTE
- * 	La funzione e` sincronizzata.
- */
+* DESCRIPTION
+* Read the current state.
+*
+* RETURN VALUES
+* The current state
+*
+* NOTES
+* The function is synchronized.
+*/
 enum e_state get_state(void)
 {
 	t_sharedVar *p;
@@ -559,15 +556,15 @@ enum e_state get_state(void)
 }
 
 /**
- * DESCRIZIONE
- * 	Impostazione dello stato corrente.
- *
- * VALORI DI RITORNO
- * 	Lo stato precedente.
- *
- * NOTE
- * 	La funzione e` sincronizzata.
- */
+* DESCRIPTION
+* Sets the current state.
+*
+* RETURN VALUES
+* The previous state.
+*
+* NOTES
+* The function is synchronized.
+*/
 enum e_state set_state(enum e_state new_s)
 {
 	t_sharedVar *p;
@@ -581,22 +578,22 @@ enum e_state set_state(enum e_state new_s)
 }
 
 /**
- * Decodifica stati server.
+ * Decoding server status.
  */
 const char * state_str(enum e_state s)
 {
 	switch (s) {
-	case e_init:		/* Stato iniziale */
+	case e_init:		/* Init Status */
 		return E_INIT;
 		break;
-	case e_ready:		/* Stato "pronto" */
+	case e_ready:		/* Ready Stato */
 		return E_READY;
 		break;
-	case e_blank:		/* Stato calcolabile: non dovrebbe comparire mai */
+	case e_blank:		/* Intermediate Status: should not be detected */
 		return E_BLANK;
 		break;
 	case e_idle:
-	default:		/* Macchina bloccata */
+	default:		/* Device in Idle */
 		return E_IDLE;
 		break;
 	}
@@ -606,8 +603,8 @@ const char * state_str(enum e_state s)
 
 
 /**
- * DESCRIZIONE
- * 	helper per gestire il communication error
+ * DESCRIPTION
+ * 	helper to manage the communication error
  */
 void comm_error(const char *msg)
 {
@@ -621,20 +618,20 @@ void comm_error(const char *msg)
 }
 
 /**
- * DESCRIZIONE
- * 	Thread che valuta lo stato.
- *
- * VALORI DI RITORNO
- * 	Nessuno: non ritorna mai.
+* DESCRIPTION
+* Thread that evaluates state.
+*
+* RETURN VALUES
+* None: never returns.
 
- */
+*/
 void * eval_state(void *par)
 {
 	char buffer[MAXPRO_LCMD];
-	size_t nb;
-	int sampling_period_ms = 100;	// periodo di campionamento stato/allarmi
+	size_t nb = 0;
+	int sampling_period_ms = 100;	// status/alarms sampling period
 	uint16_t fpga_old_state = 0;
-	uint16_t fpga_state;
+	uint16_t fpga_state = 0x1800;
 	fpga_data_t state;
 	fpga_data_t alrm;
 	uint16_t fpga_alarm = 0;
@@ -653,58 +650,61 @@ void * eval_state(void *par)
 		enum e_state s = get_state();
 
 		if (s != e_idle) {
-
-			do{
-				state = fpga_peek(r_State);				//read fpga state register
-				if (state == -1){
-					comm_error("Can't get FPGA State");
-					continue;
-				}else{
-					fpga_state = (state & 0x0000FFFF);
-					fpga_state2 = (state>>16);
-				}
-				alrm = fpga_peek(r_Alarm);				//read fpga alarm register
-				if (alrm == -1) {
-					comm_error("Can't get FPGA Alarm");
-					continue;
-				}else
-					fpga_alarm = alrm;
-
-				if (imp_count > 3){
-					imp_count = 0;
-					msleep(1000);
-					(void)set_state(e_init);
-					break;
-				}
-				else
-				{
-					if (fpga_state == fpga_alarm && fpga_state == fpga_state2){
-						comm_error("FPGA clock freezed. Trying to recover it.");
-						imp_count ++;
-						msleep(100);
+			if (!noFPGA){
+				do{
+					state = fpga_peek(r_State);				//read fpga state register
+					if (state == -1){
+						comm_error("Can't get FPGA State");
+						continue;
+					}else{
+						fpga_state = (state & 0x0000FFFF);
+						fpga_state2 = (state>>16);
 					}
-				}
+					alrm = fpga_peek(r_Alarm);				//read fpga alarm register
+					if (alrm == -1) {
+						comm_error("Can't get FPGA Alarm");
+						continue;
+					}else
+						fpga_alarm = alrm;
 
-			}while(fpga_state == fpga_alarm && fpga_state == fpga_state2);
-			
-			if ((fpga_old_state != fpga_state ||
-				 fpga_old_state2 != fpga_state2 ||
-				 fpga_old_alarm != fpga_alarm)) {
-				//log_info("%04X %04X %04X", fpga_state, fpga_state2, fpga_alarm);
-				nb = sprintf(buffer, "State=%04X State2=%04X Alarm=%04X", fpga_state, fpga_state2, fpga_alarm);
-				write2mainAll(buffer, nb);
+					if (imp_count > 3){
+						imp_count = 0;
+						msleep(1000);
+						(void)set_state(e_ready);
+						break;
+					}
+					else
+					{
+						if (fpga_state == fpga_alarm && fpga_state == fpga_state2){
+							comm_error("FPGA clock freezed. Trying to recover it.");
+							imp_count ++;
+							msleep(100);
+						}
+					}
+				}while(fpga_state == fpga_alarm && fpga_state == fpga_state2);
+
+				if ((fpga_old_state != fpga_state ||
+					 fpga_old_state2 != fpga_state2 ||
+					 fpga_old_alarm != fpga_alarm)) {
+					nb = sprintf(buffer, "State=%04X State2=%04X Alarm=%04X", fpga_state, fpga_state2, fpga_alarm);
+					write2mainAll(buffer, nb);
+				}
+			}else{
+				(void)set_state(e_ready);
 			}
 			
-			/* Calcolo degli stati **************************************** */
+			/* status calculation **************************************** */
 			if (s == e_blank) {
 				if ((fpga_state & MASK_READY)!= PATT_READY){
-					// Condizione anomala
+					// Wrong Condition
 					log_warning("HW not in ready");
 					nb = warningMsg(W_HIGH, FALSE,
 									e_errAsyncHWInUnexpectedState, buffer,
 									"HW not in ready ($1=%04X;))",
 									(0x00FFFF)&fpga_state);
 					write2mainAll(buffer, nb);
+				}else{
+					s = e_ready;
 				}
 			}
 			else {
@@ -718,19 +718,19 @@ void * eval_state(void *par)
 									e_errAsyncHWInUnexpectedState, buffer,
 									"HW not in ready ($1=%04X;))",
 									(0x00FFFF)&fpga_state);
-					}
-				write2mainAll(buffer, nb);
-				s = e_blank;
+					write2mainAll(buffer, nb);
+					s = e_blank;
+				}
 			}
 			sampling_period_ms = 2;
-			// Imposta lo stato calcolato
+			// set status
 			(void)set_state(s);
 		}
 		else{ /* s == e_idle */
 			sampling_period_ms = 100;
 		}
 
-		// Segnala le variazioni a tutti i clienti collegati
+		// Report changes to all connected customers
 		if (s != old_s) {
 			nb = stateVar(buffer, old_s, s);
 			write2mainAll(buffer, nb);
@@ -743,11 +743,11 @@ void * eval_state(void *par)
 
 		(void)set_state(s);
 
-		// attendi per il tempo impostato
+		// wait for the sampling time
 		msleep(sampling_period_ms);
 	}
 
-	/* Ritorna comunque un valore */
+	/* Returns a value */
 	return NULL;
 }
 
@@ -755,7 +755,7 @@ void * eval_state(void *par)
 /******************************************************************************/
 
 /**
- *	Gestore generale delle signal.
+ *	General signal manager.
  */
 static void sig_trap(int sig /** Come da ANSI */)
 {
@@ -766,7 +766,7 @@ static void sig_trap(int sig /** Come da ANSI */)
 /******************************************************************************/
 
 /**
- *	Gestore della SIGPIPE.
+ *	SIGPIPE Manager.
  */
 static void sig_pipe(int sig /** Come da ANSI */)
 {
@@ -777,7 +777,7 @@ static void sig_pipe(int sig /** Come da ANSI */)
 /******************************************************************************/
 
 /**
- *	Gestore della SIGCHLD
+ *	SIGCHLD Manager
  */
 static void sig_chld(int sig /** Come da ANSI */)
 {
@@ -795,16 +795,14 @@ static void sig_chld(int sig /** Come da ANSI */)
  */
 static void before_exit(void)
 {
-	/* Non resettare la PGA; c'e` un conflitto con distruttore del C++ */
 	log_info("*** program terminated");
 }
 
 /******************************************************************************/
 
 /**
- *	Verifica lo scadere del timeout di disconnessione per inattivita'
- *	sul canale.
- */
+* Checks for inactivity disconnect timeout on the channel.
+*/
 static void f_cleanup(void)
 {
 	int state=0;
@@ -812,13 +810,13 @@ static void f_cleanup(void)
 
 	while ((p_stato = stato_iter(&state)) != NULL) {
 		if (p_stato->fd >= 0 && !btst(p_stato->options, O_INTERNAL)) {
-			/* Verifica se non c'e' attivita' da piu di tot secondi */
+			/* Check if there is no activity for more than so many seconds */
 			if (p_stato->last_t + S_conn_tout < mtimes()) {
-				/* Timeout, devi sbaraccare */
+				/* Timeout, must close */
 				bset(p_stato->options, O_MUST_CLOSE);
-				/* Il chiamante si preoccupera' di mettere a posto i
-				 * bit dei descrittori della select.
-				 */
+				/* The caller will take care of setting the
+				* bits of the select descriptors.
+				*/
 				log_warning("Connection timeout (fd=%d)", p_stato->fd);
 			}
 		}

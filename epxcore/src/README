@@ -10,7 +10,7 @@ bitbake -c fetch -f zepcore
 bitbake core-image-minimal
 
 #per rifare autoconf da capo
-. /home/berta/Programmi/Yocto/poky/oe-init-build-env
+. /home/berta/work/final-project/final-project-repository-bertac64/petalinux
 libtoolize
 aclocal
 autoconf

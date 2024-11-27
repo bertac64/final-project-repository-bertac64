@@ -1,7 +1,7 @@
 /**
- * sharedVar.c - Gestione sincronizzata variabili condivise tra thread.
+ * sharedVar.c - Sinchronized variables shared between threads.
  *
- * (C) 2008 GGH Srl per Igea SpA
+ * (C) bertac64
  *
  */
 

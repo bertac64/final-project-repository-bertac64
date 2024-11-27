@@ -17,6 +17,5 @@ SUBDIRS := \
 .metadata/.plugins/org.eclipse.cdt.make.core \
 libep \
 liblog \
-old \
 src \
 

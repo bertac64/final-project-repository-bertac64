@@ -1,7 +1,7 @@
 /**
- * command.c - Elaborazione comandi del server.
+ * command.c - Server commands.
  *
- * (C) 2008 GGH srl per Igea SpA
+ * (C) bertac64
  *
  */
 #include <stdio.h>
@@ -652,7 +652,7 @@ static ssize_t fCmd_read(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	else  {
 		int j;
 		char ans[MAXSTR];
-		sprintf(ans, "%ld", count);
+		sprintf(ans, "%zd", count);
 		int cont = atoi(ans);
 		log_debug("read: read(%08X,%08X)", base, cont);
 		strcpy(ans ,"");

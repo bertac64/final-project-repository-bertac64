@@ -1,7 +1,7 @@
 /**
- * main.h - header del programma epcore.
+ * main.h - header of the epxcore program.
  *
- * (C) 2008 GGH Srl per Igea SpA
+ * (C) bertac64
  *
  */
 #ifndef MAIN_H_

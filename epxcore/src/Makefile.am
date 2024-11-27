@@ -8,4 +8,4 @@ include_HEADERS =
  
 bin_PROGRAMS = epxcore
 epxcore_LDADD = ../libep/libep.a ../liblog/liblog.a
-epxcore_SOURCES = util.c sharedVar.c middle.c md5.c main.c fpga.c driver.c command.c bite.c epxcore.c
+epxcore_SOURCES = epxcore.c main.c util.c sharedVar.c middle.c fpga.c driver.c command.c

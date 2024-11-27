@@ -1,7 +1,7 @@
 /**
- * command.h - Header per elaborazione comandi del server.
+ * command.h - Header for the server command elaboration.
  *
- * (C) 2008 GGH srl per Igea SpA
+ * (C) bertac64
  *
  */
 #ifndef COMMAND_H_

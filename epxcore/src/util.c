@@ -1,5 +1,5 @@
 /**
- * util.c - Funzioni di utilita`
+ * util.c - utility functions
  *
  * (C) 2024 bertac64
  *
@@ -23,7 +23,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <signal.h>
-#include <stdint.h>		/* Integra i tipi elementari di sys/types.h */
+#include <stdint.h>		/* Integrate the elementary types from sys/types.h */
 #include <assert.h>
 #include <pthread.h>
 
@@ -47,13 +47,13 @@
 const unsigned int BIND_RETRY_COUNT = 20;
 
 /******************************************************************************/
-/* Modulo di gestione dello stato clienti connessi							  */
+/* Connected customer status management module								  */
 /******************************************************************************/
 
-static t_stato S_stato[MAXPRO_CLI];	/* Tabella con lo stato dei client */
+static t_stato S_stato[MAXPRO_CLI];	/* Table with client status */
 
 /**
- * Inizializza la tabella dei clienti.
+ * Initialize the customer table.
  */
 void stato_init(void)
 {
@@ -69,14 +69,14 @@ void stato_init(void)
 }
 
 /**
- * Aggiunge (crea) un cliente nella tabella dei clienti gestiti
- * Ritorna l'indice del cliente creato, -1 per errore.
+ * Adds (creates) a customer in the managed customers table
+ * Returns the index of the created customer, -1 for error.
  */
 int stato_add(int fd, int options)
 {
 	int j;
 
-	/* Cerca descrittore di sessione libero */
+	/* Search a free session descriptor */
 	for (j=0; j<MAXPRO_CLI; j++) {
 		if (S_stato[j].fd == -1) {
 			S_stato[j].fd = fd;
@@ -96,8 +96,8 @@ int stato_add(int fd, int options)
 }
 
 /**
- * Itera sulla lista dei clienti gestiti.
- * Ritorna un puntatore valido al "prossimo" cliente o NULL a fine lista.
+ * Iterate over the list of managed customers.
+ * Returns a valid pointer to the "next" client or NULL at the end of the list.
  */
 t_stato * stato_iter(int *iter)
 {
@@ -112,17 +112,17 @@ t_stato * stato_iter(int *iter)
 /***************************************************************************/
 
 /**
- * DESCRIZIONE
- *	Trova un cliente nella tabella dei clienti collegati. La chiave di ricerca
- *	e` il fd della connessione.
- * VALORI DI RITORNO
- *	Torna un puntatore al descrittore o NULL in caso di errore (not found).
+ * DESCRIPTION
+ * Find a customer in the connected customers table. The search key
+ * is the fd of the connection.
+ * RETURN VALUES
+ * Returns a pointer to the descriptor or NULL on error (not found).
  */
 t_stato *stato_getbyfd(int fd)
 {
 	int j;
 
-	/* Cerca descrittore di sessione libero */
+	/* Search a free session descriptor */
 	for (j=0; j<MAXPRO_CLI; j++) {
 		if (S_stato[j].fd == fd)
 			return &S_stato[j];
@@ -132,8 +132,8 @@ t_stato *stato_getbyfd(int fd)
 }
 
 /**
- *		Chiude il canale di comunicazione con il cliente e libera lo slot
- *		corrispondente.
+ * Closes the communication channel with the customer and frees the slot
+ * matching.
  */
 void stato_close(t_stato *p_chn)
 {
@@ -153,9 +153,9 @@ void stato_close(t_stato *p_chn)
 }
 
 /**
- * 	Cancella un task in esecuzione e azzera la struttura corrispondente.
+ * Deletes a running task and clears the corresponding structure.
  */
-void task_cancel(t_task *t			/** descrittore di task */)
+void task_cancel(t_task *t			/** task descriptor */)
 {
 	pthread_mutex_lock(&(t->mutex));
 	if (t->valid && !pthread_equal(pthread_self(), t->th))
@@ -169,12 +169,12 @@ void task_cancel(t_task *t			/** descrittore di task */)
 }
 
 /**
- * 	Inizializza la struttura di un task.
+ * Initializes the structure of a task.
  */
-void task_create(t_task *t,			/** descrittore di task */
-				 int cnt, 			/** Rif. progressivo al comando */
-				 t_cmd *pCmd, 		/** Descrittore del comando */
-				 t_stato *p_stato	/** Descrittore/stato di canale */)
+void task_create(t_task *t,			/** task descriptor */
+				 int cnt, 			/** Progressive ref. to the command */
+				 t_cmd *pCmd, 		/** Command Descriptor */
+				 t_stato *p_stato	/** Channel Descriptor/status */)
 {
 	pthread_attr_t attr;
 
@@ -212,43 +212,43 @@ void task_create(t_task *t,			/** descrittore di task */
 }
 
 /******************************************************************************/
-/* Modulo gestione canali e protocolli										  */
+/* Channel and protocol management module									  */
 /******************************************************************************/
 
 /**
- *	DESCRIZIONE
- *		Configura il canale passivo di servizio.
- *	VALORI DI RITORNO
- *		Un socket passivo. Gli errori sono fatali.
+ *	DESCRIPTION
+ * Configure the passive service channel.
+ * RETURN VALUES
+ * A passive socket. Mistakes are fatal.
  */
-int ch_conf(short portnum	/** Numero della well-known port */)
+int ch_conf(short portnum	/** Number of the well-known port */)
 {
 	int s, on = 1;
 	unsigned int j;
 	struct sockaddr_in epc_sin;
 	int bind_retval = -1;
 
-	/* apri il socket principale di riallineamento */
+	/* open main realignment socket */
 	if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 		log_fatal("socket: %s", strerror(errno));
 
-	log_debug("creato socket %d", s);
+	log_debug("created socket %d", s);
 
-	/* metti a "riusabile" l'indirizzo, per evitare TIME_WAIT;
-		N.B.: il fatto che un socket sia riutilizzabile non
-		vuol dire che due istanze possano partire sullo stessa
-		coppia indirizzo/porta. Se sta girando un altro server,
-		la bind() fallira` con EADDRINUSE. */
+	/* set the address to "reusable", to avoid TIME_WAIT;
+		N.B.: the fact that a socket is reusable does not
+		it means that two instances can start on the same one
+		address/port pair. If another server is running,
+		bind() will fail with EADDRINUSE. */
 	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) != 0)
 		log_fatal("setsockopt(SO_REUSEADDR): %s", strerror(errno));
-	log_debug("(socket riutilizzabile)");
+	log_debug("(socket reusable)");
 
-	/* fai il bind con il suo "well known port number" */
+	/* make bind with its "well known port number" */
 	bzero((char *)&epc_sin, sizeof(epc_sin));
 	epc_sin.sin_family = AF_INET;
-	epc_sin.sin_port = htons(portnum);	/* attenzione: htons */
+	epc_sin.sin_port = htons(portnum);	/* attention: htons */
 
-	// ciclo per ritentare la bind se fallisce
+	// retry bind if fails
 	for (j=0; j<BIND_RETRY_COUNT; ++j)
 	{
 		bind_retval = bind(s, (struct sockaddr *)&epc_sin, sizeof(epc_sin));
@@ -261,52 +261,52 @@ int ch_conf(short portnum	/** Numero della well-known port */)
 	}
 
 	if (bind_retval == -1){
-		log_debug("Bind non effettuata dopo 20 tentativi");
+		log_debug("Bind not executed after 20 tentatives");
 		return (-1);
 	}else
-		log_debug("effettuata bind(): porta %d", portnum);
+		log_debug("done bind(): porta %d", portnum);
 
-	/* accetta le connessioni da tutti gli host; coda d'attesa: 5  */
+	/* accept connections from all hosts; waiting queue: 5 */
 	if (listen(s, 5) == -1) {
 		log_fatal("listen: %s", strerror(errno));
 		exit(1);
 	}
-	log_debug("effettuata listen()");
-	log_debug("canale di servizio configurato");
+	log_debug("done listen()");
+	log_debug("service channel configured");
 
-	/* Ritorna */
+	/* Return */
 	return s;
 }
 
 /**
- *	"Cucina" un buffer per trasformarlo in un messaggio valido da spedire.
- *	Ritorna la lunghezza del buffer.
+ * "Cook" a buffer to turn it into a valid message to send.
+ * Returns the length of the buffer.
  */
-size_t cook(char *buffer, 		/* Buffer uscita */
-			 const char *cmd,	/* buffer ingresso */
-			 size_t	buflen		/* Lunghezza del suddetto */)
+size_t cook(char *buffer, 		/* Exit buffer */
+			 const char *cmd,	/* Input buffer */
+			 size_t	buflen		/* buffer length */)
 {
 	size_t len = buflen;
 	if (buflen > 2) {
-		/* e` una stringa zero-terminated, quindi la lunghezza non interessa */
+		/* It's a zero-terminated string, so length doesn't matter */
 		len = snprintf(buffer, MAXPRO_LCMD, "%s\r\n", cmd);
 
-		/* Stampa di debug */
+		/* debug */
 		if (isdebug())
 			log_dump((char *) buffer, len);
 	}else
 		log_error("Wrong buffer length: %d", len);
 
-	/* Ritorna le dimensioni */
+	/* returns the dimentions */
 	return len;
 }
 
 /**
- *	Assembla un messaggio completo in ricezione.
- *	Puo` essere chiamato ciclicamente: se chunk=NULL cerca solo di
- *	ritornare l'eventuale prossimo comando completo presente nel buffer.
- *	Ritorna la lunghezza del buffer; 0 se il buffer non e' ancora pronto,
- *	-1+errno in caso di errore (il canale va chiuso).
+ * Assemble a complete message on reception.
+ * Can be called cyclically: if chunk=NULL just look for
+ * return any next complete command present in the buffer.
+ * Returns the length of the buffer; 0 if the buffer is not yet ready,
+ * -1+errno in case of error (the channel must be closed).
  */
 ssize_t abcr(t_stato *p,		/* Informazioni di canale */
 			 const char *chunk, /* Chunk di dati in arrivo */
@@ -319,7 +319,7 @@ ssize_t abcr(t_stato *p,		/* Informazioni di canale */
 
 	if (chunk != NULL) {
 		if (chlen + p->nb > sizeof(p->b)) {
-		 	/* errore piuttosto serio; violazione del protocollo? */
+		 	/* serious error; protocol violation? */
 		 	errno = EBADMSG;
 		 	return (ssize_t)-1;
 		}
@@ -328,18 +328,18 @@ ssize_t abcr(t_stato *p,		/* Informazioni di canale */
 		p->nb += chlen;
 	}
 
-	/* Sono pur sempre stringhe: zero-termina per sicurezza */
+	/* are strings: zero-termined for safety */
 	p->b[p->nb] = '\0';
 	if ((ps = strstr(p->b, "\r\n")) == NULL)
 		return 0;
 
-	/* Hai un pacchetto: staccalo */
+	/* packet found: detach it */
 	oblen = ps - p->b;
 	memcpy(outbuf, p->b, oblen);
 	outbuf[oblen] = 0;
 
-	/* Riallinea il buffer */
-	cl = oblen + 2;			/* lunghezza + terminatore CRLF */
+	/* buffer alignment */
+	cl = oblen + 2;			/* length + terminator CRLF */
 	memmove(p->b, &(p->b[cl]), p->nb - cl);
 	p->nb -= cl;
 
@@ -347,14 +347,14 @@ ssize_t abcr(t_stato *p,		/* Informazioni di canale */
 }
 
 /******************************************************************************/
-/* Gestione separazione in token e esecuzione comandi 						  */
+/* Management of token separation and command execution						  */
 /******************************************************************************/
 
 /**
- *	Disalloca la memoria allocata per i token (cfr. argTok).
+ *	Desallocates memory allocated for tokens (cfr. argTok).
  */
-void freeTok(char **psp,	/* Array di puntatori a token */
-			 int32_t nArgs	/* Numero di token */)
+void freeTok(char **psp,	/* Array of pointers to token */
+			 int32_t nArgs	/* Number of token */)
 {
 	int j;
 
@@ -367,17 +367,17 @@ void freeTok(char **psp,	/* Array di puntatori a token */
 /******************************************************************************/
 
 /**
- *	Trasforma una stringa di comandi in token, riponendoli in un array che
- *	segnala la fine della lista tramite NULL. Per disallocare i token
- *	bisogna utilizzare la funzione freeTok().
- *	Ritorna:
- *		>=0 numero di token ricavati dalla stringa,
- *		-1	se la stringa di comandi non e` valida,
- *		-2	se ci sono troppi argomenti.
+ * Transforms a string of commands into tokens, storing them in an array that
+ * signals the end of the list by NULL. To de-allocate tokens
+ * you must use the freeTok() function.
+ * Return:
+ * >=0 number of tokens obtained from the string,
+ * -1 if the command string is invalid,
+ * -2 if there are too many arguments.
  */
-int32_t argTok(const char *cmdStr, 	/** Stringa da tokenizzare */
-			   char **psp,			/** Array di puntatori a token */
-			   int32_t maxArgs		/** Massimo numero di token ammessi */)
+int32_t argTok(const char *cmdStr, 	/** String to be tokenized */
+			   char **psp,			/** Array of pointers to a token */
+			   int32_t maxArgs		/** Max number of allowed token */)
 {
 	char *cmdCpy, *pStart, *p;
 	int parNum, qFlg, sFlg, anyChar, retval;
@@ -472,23 +472,21 @@ tokError:
 /*****************************************************************************/
 
 /**
- *	DESCRIZIONE
- *		Esegue un coprocesso come popen(), ma torna un file descriptor
- *		bidirezionale.
- *	VALORI DI RITORNO
- *		File descriptor; -1 per errore (cfr. errno).
- *		Via *ppid, torna anche il pid del processo.
+ *	DESCRIPTION
+ * Runs a coprocess like popen(), but returns a file descriptor
+ * bidirectional.
+ * RETURN VALUES
+ * File descriptors; -1 for error (see errno).
+ * Via *ppid, the process pid also returns.
  */
-
-
-int bipopen(const char *command,	/** Comando */
-			pid_t *ppid	/** ptr a pid da tornare o NULL */)
+int bipopen(const char *command,	/** Command */
+			pid_t *ppid	/** ptr to pid to be returned or NULL */)
 {
 	int fds[2];
 	pid_t pid;
-	const size_t MAXARGS=100;		/* N. massimo di argomenti ammessi */
+	const size_t MAXARGS=100;		/* Max allower arguments */
 
-	/* Crea una nuova full duplex socket pipe */
+	/* new full duplex socket pipe */
 	if (socketpair(AF_LOCAL, SOCK_STREAM, 0, fds) < 0)
 		return -1;
 
@@ -498,9 +496,9 @@ int bipopen(const char *command,	/** Comando */
 	if ((pid = fork()) == 0) {
 		sigset_t smask;
 		char *psp[MAXARGS];
-		char taskName[1024];
+		char taskName[1028];
 
-		/* ------ Inizio codice figlio ------ */
+		/* ------ initalizing child code ------ */
 
 		/* Preparo argomenti */
 		log_debug("Launch task \"%s\"", command);
@@ -562,16 +560,15 @@ int bipopen(const char *command,	/** Comando */
 }
 
 /******************************************************************************/
-/*** Pacchetto I/O resistente alle SIGCHLD ************************************/
+/*** Packet I/O resistent to SIGCHLD ************************************/
 /******************************************************************************/
-
-
-/*
- *	DESCRIZIONE
- *		Read non interrompibile.
- *		Stevens vI.
- *	VALORI DI RITORNO
- *		Quelli di read;
+/**
+ * DESCRIPTION
+ * Runs a coprocess like popen(), but returns a file descriptor
+ * bidirectional.
+ * RETURN VALUES
+ * File descriptors; -1 for error (see errno).
+ * Via *ppid, the process pid also returns.
  */
 ssize_t Read(int fd,			/** file descriptor */
 			 void *buffer,		/** buffer da scrivere */
@@ -590,18 +587,18 @@ ssize_t Read(int fd,			/** file descriptor */
 /******************************************************************************/
 
 /*
- *	DESCRIZIONE
- *		Write non interrompibile che scrive esattamente n caratteri.
- *		Stevens UNP.1 p. 78.
- *	VALORI DI RITORNO
- *		Quelli di write;
+ *	DESCRIPTION
+ * Non-interruptible write that writes exactly n characters.
+ * Stevens UNP.1 p. 78.
+ * RETURN VALUES
+ * Those of write;
  */
 ssize_t Writen(int fd,				/** file descriptor */
 			   const char *vptr,	/** buffer da scrivere */
 			   size_t n				/** N. caratteri da scrivere */)
 {
 	size_t nleft;
-	char ptr[1024];
+	char ptr[1024]="";
 	ssize_t nwritten=0;
 	ssize_t retval = n;
 
@@ -631,11 +628,11 @@ ssize_t Writen(int fd,				/** file descriptor */
 /******************************************************************************/
 
 /*
- *	DESCRIZIONE
- *		helper per readline (cfr.).
- *		Stevens UNP.1 p. 80.
- *	VALORI DI RITORNO
- *		1: un carattere letto; 0: EOF; -1: errore
+ *	DESCRIPTION
+ * helper for readline (cf.).
+ * Stevens UNP.1 p. 80.
+ * RETURN VALUES
+ * 1: a read character; 0: EOF; -1: error
  */
 ssize_t my_readc(int fd,			/** File descriptor */
 				 char *ptr			/** Carattere da ritornare */)
@@ -675,12 +672,12 @@ again:
 /******************************************************************************/
 
 /*
- *	DESCRIZIONE
- *		readline non interrompibile. Come fgets, ma lavora su fd e ritorna
- *		il numero di caratteri letti o -1.
- *		Stevens UNP.1 p. 80.
- *	VALORI DI RITORNO
- *		Numero di caratteri letti (0 per hangup); -1 + errno per errore.
+ *	DESCRIPTION
+ * non-interruptible readline. Like fgets, but works on fd and returns
+ * the number of characters read or -1.
+ * Stevens UNP.1 p. 80.
+ * RETURN VALUES
+ * Number of characters read (0 for hangup); -1 + errno by mistake.
  */
 ssize_t readline(int fd,			/** File descriptor */
 				 void *vptr,		/** Buffer da riempire */
@@ -718,11 +715,11 @@ ssize_t readline(int fd,			/** File descriptor */
 static int S_clk_tck;
 
 /**
- *	DESCRIZIONE
- *		Inizializza il sottosistema di timing e setta l'istante T= del sistema.
+ *	DESCRIPTION
+ * Initialize the timing subsystem and set the system time T=.
  *
- *	VALORI DI RITORNO
- *		Nessuno.
+ * RETURN VALUES
+ *		Nobody.
  *
  */
 void init_timer(void)
@@ -734,12 +731,12 @@ void init_timer(void)
 }
 
 /**
- *  DESCRIZIONE
- *		Gestisce fino ad un massimo di tre errori consecutivi in times().
- *		In caso di erori ripetuti, abortisce.
+ *  DESCRIPTION
+ * Handles up to three consecutive errors in times().
+ * In case of repeated errors, it aborts.
  *
- *	VALORI DI RITORNO
- *		Come times; in piu' in caso di errore ripetuto, esce.
+ * RETURN VALUES
+ * Come times; furthermore, in case of repeated errors, it exits.
  *
  */
 static clock_t wtimes(void)
@@ -763,17 +760,17 @@ static clock_t wtimes(void)
 }
 
 /**
- *  DESCRIZIONE
- *		Ritorna un tempo elapsed in millisecondi da un istante
- *		arbitrario dopo il boot della macchina. Il tipo t_mclock e` definito
- *		come (signed) long long e quindi e` "grande a sufficienza" per
- *		supportare uptime di secoli.
+ *  DESCRIPTION
+ * Returns an elapsed time in milliseconds from an instant
+ * arbitrary after machine boot. The t_mclock type is defined
+ * as (signed) long long and therefore is "large enough" for
+ * Support uptime of centuries.
  *
- *	VALORI DI RITORNO
- *		Tempo in millisecondi.
+ * RETURN VALUES
+ * Time in milliseconds.
  *
- *  NOTE
- *		Chiama wtimes e quindi, in caso di errore fatale, abortisce.
+ * NOTES
+ * Calls wtimes and then, on a fatal error, aborts.
  */
 t_mclock mtimes(void)
 {
@@ -795,15 +792,15 @@ t_mclock mtimes(void)
 
 
 /*****************************************************************************
- ****** Utilita`**************************************************************
+ ****** Utilities **************************************************************
  *****************************************************************************/
 
 /**
- *	DESCRIZIONE
- *		Sospende il thread corrente per (almeno) ms millisecondi.
+ *	DESCRIPTION
+ * Suspend the current thread for (at least) ms milliseconds.
  *
- *	VALORI DI RITORNO
- *		Nessuno.
+ * RETURN VALUES
+ *		Nobody.
  *
  */
 void msleep(int ms)
@@ -818,12 +815,12 @@ void msleep(int ms)
 }
 
 /**
- *	DESCRIZIONE
- *		Alloca dinamicamente spazio per copiarci la stringa passata.
+ *	DESCRIPTION
+ * Dynamically allocate space to copy the passed string into.
  *
- *	VALORI DI RITORNO
- *		Puntatore a stringa valida, NULL se la stringa e` NULL o
- *		in caso di errore.
+ * RETURN VALUES
+ * Pointer to valid string, NULL if string is NULL or
+ * in case of error.
  *
  */
 char * savestr(const char *str)
@@ -844,13 +841,13 @@ char * savestr(const char *str)
 /******************************************************************************/
 
 /**
- *	DESCRIZIONE
- *		Trasforma una stringa di lunghezza specificata in un'altra stringa
- *		in cui il carattere '\' e i caratteri non stampabili sono stati
- *		convertiti rispettivamente nelle sequenze "\\" e "\x??". Se il flag
- *		hexOnly e` posto a 1 tutti i caratteri sono convertiti in esadecimale.
- *	VALORI DI RITORNO
- *		La lunghezza della stringa convertita.
+ *	DESCRIPTION
+ * Transforms a string of specified length into another string
+ * where the character '\' and non-printing characters have been
+ * converted to the sequences "\\" and "\x??" respectively. If the flag
+ * hexOnly is set to 1 all characters are converted to hexadecimal.
+ * RETURN VALUES
+ * The length of the converted string.
  */
 size_t buf2str(char *p_out,			/** Buffer destinazione */
 			   size_t maxOutStrLen,	/** Dimensione del buffer */
@@ -893,14 +890,14 @@ size_t buf2str(char *p_out,			/** Buffer destinazione */
 /******************************************************************************/
 
 /**
- *	DESCRIZIONE
- *		Trasforma una stringa ove le sequenze "\\", "\x??" e "\???"
- *		rappresentano rispettivamente i caratteri '\', e le
- *		rappresentazioni esadecimale e ottale di un byte.
- *	VALORI DI RITORNO
- *		>=0	la lunghezza della stringa convertita,
- *		<0  la posizione nella stringa da convertire ove si e` verificato un
- *			errore d'interpretazione.
+ *	DESCRIPTION
+ * Transform a string where the sequences "\\", "\x??" And "\???"
+ * represent the characters '\', and le respectively
+ * hexadecimal and octal representations of a byte.
+ * RETURN VALUES
+ * >=0 the length of the converted string,
+ * <0 the position in the string to be converted where a
+ * error of interpretation.
  */
 ssize_t str2buf(uint8_t *p_out,			/** Buffer di output */
 				size_t maxOutBufLen,	/** Lunghezza del buffer */
@@ -976,13 +973,12 @@ ssize_t str2buf(uint8_t *p_out,			/** Buffer di output */
 }
 
 /*
- * DESCRIZIONE
- * 	Calcola l'intervallo di tempo in secondi dalla data passata (formato HHDDMMYY)
- *	ad ora.
- * VALORI DI RITORNO
- * 	Numero di secondi, -1 per data non valida.
+ * DESCRIPTION
+ * Calculate the time interval in seconds from the past date (HHDDMMYY format)
+ * to now.
+ * RETURN VALUES
+ * Number of seconds, -1 for invalid date.
  */
-
 int since_now(const char *date)
 {
 	struct tm tm;

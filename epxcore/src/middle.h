@@ -1,13 +1,13 @@
 /**
- * middle.h - Header delle funzioni di interfaccia al middleware FPGA.
+ * middle.h - Header of the interface functions to the middleware FPGA.
  *
- * (C) 2008 GGH srl per Igea SpA
+ * (C) bertac64
  *
  */
 #ifndef MIDDLE_H
 #define MIDDLE_H
 #include "fpga.h"
-#define PARS_BULK_BASE	TDATA_OFFSET	//0xFC000	// Base per il trasferimento parametri
+#define PARS_BULK_BASE	TDATA_OFFSET	// Base for the treatment parameters transfer
 
 void reset_watchdog(void);
 int reset_hardware(void);

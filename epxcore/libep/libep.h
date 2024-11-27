@@ -44,5 +44,6 @@ char * translateMessage( t_map *p_map, const char *from_server,
 char * translateInternalMsg(t_map *p_map, int errcod,
 							const char *fields,
 							char *dest_buffer, size_t dest_size	);
+const char * get_cputype(char *buf);
 
 #endif /*UTIL_H_*/
