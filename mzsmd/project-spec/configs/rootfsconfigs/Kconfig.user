@@ -1,4 +1,12 @@
 menu "user packages " 
+config epsmdrv  
+	 bool "epsmdrv"
+	 help
+	
+config epxcore  
+	 bool "epxcore"
+	 help
+	
 config gpio-demo  
 	 bool "gpio-demo"
 	 help

@@ -37,9 +37,6 @@
 /* ========================================================================= */
 /* Prototipi interni */
 
-static void startAsync(t_cmd *pCmd, int32_t cnt, t_stato *p_stato);
-static ssize_t mutex_startAsync(t_cmd *, int32_t, t_stato *, char *);
-
 /* ========================================================================= */
 /* static global */
 static ssize_t fCmd_nop (t_stato *p_stato, t_cmd *pCmd, \
@@ -637,11 +634,6 @@ static ssize_t fCmd_read(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
 											"bad count format", -1, e_errParam);
 	}
-//	if ((count % 0x200) != 0) {
-//		log_warning("read: block size (count=%08X)", count);
-//		return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL,
-//										"invalid block size", -1, e_errParam);
-//	}
 
 	if ((count*sizeof(uint32_t)) + base >= SRAM_IP_BASEADDR) {
 		log_warning("read: end address too high (%08X)", (count*sizeof(uint32_t)) + base);
@@ -660,7 +652,7 @@ static ssize_t fCmd_read(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	else  {
 		int j;
 		char ans[MAXSTR];
-		sprintf(ans, "%d", count);
+		sprintf(ans, "%ld", count);
 		int cont = atoi(ans);
 		log_debug("read: read(%08X,%08X)", base, cont);
 		strcpy(ans ,"");
@@ -670,8 +662,8 @@ static ssize_t fCmd_read(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 			sprintf(ans, "+ %08zX", j*4+(base));
 
 			for (k=0; k < 8; k++) {
-				char tmps[8];
-				sprintf(tmps, " %08zX", buf[j+k]);
+				char tmps[10];
+				sprintf(tmps, " %08X", buf[j+k]);
 				strcat(ans, tmps);
 			}
 			if (write2client(p_stato->fd, ans, strlen(ans)) < 0) {
@@ -948,7 +940,6 @@ static ssize_t fCmd_abort(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 						const char **tok, int32_t ntok, int32_t cnt)
 {
 	ssize_t ret;
-	t_sharedVar *p_sv;
 
 	assert(ntok == 0);
 
@@ -962,140 +953,8 @@ static ssize_t fCmd_abort(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 	//inizio l'abort
 
 	switch (get_state()) {
-/*	case e_rfid:
-		task_cancel(&(p_stato->t));
-
-		// Resetta il bit
-		p_sv = acquireSharedVar();
-		p_sv->inRFID = FALSE;
-		releaseSharedVar(&p_sv);
-		break;*/
-
-	case e_chrgn:
 	case e_ready:
 		log_info("ABORT in ready");	// XXX
-		// Scarica della parte di potenza; equivale a CHARGE 0
-		/* memorizza carica attesa e tolleranza */
-#ifndef SIMULAZIONE
-	{
-		// Se c'e` energia, scarica; altrimenti, resetta
-		fpga_data_t alarm = fpga_peek(r_Alarm);
-		if (alarm == -1) {
-			log_error("abort: can't get FPGA Alarm");
-			return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "Can't get alarm", -1, e_errFPGA);
-		}
-
-		uint16_t fpga_alarm = alarm>>16;
-		if (btst(fpga_alarm, FA_ENERGY)) {
-			if (do_charge(0, 0) != 0)
-				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "discharge failed", -1, e_errFPGA);
-			charge_timer_stop();
-			log_warning("abort: system discharged.");
-		}
-		else {
-			log_warning("abort: system reset.");
-			if (reset_hardware() != 0)
-				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "reset failed", -1, e_errFPGA);
-			if (init_hardware() != 0)
-				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "init failed", -1, e_errFPGA);
-		}
-	}
-#endif
-		p_sv = acquireSharedVar();
-		p_sv->HVadc = p_sv->HVdac  = 0;
-		p_sv->LVadc = p_sv->LVdac = 0;
-		releaseSharedVar(&p_sv);
-
-#ifdef SIMULAZIONE
-		(void)fSth_chrg(p_stato);
-#endif
-		break;
-
-	case e_armed:
-	case e_wtreat:
-		log_info("ABORT in wtreat");	// XXX
-		// Cancellazione del bit FS_P1EDGE -> ritorno allo stato READY
-#ifndef SIMULAZIONE
-		fpga_data_t state = 0;
-		uint16_t fpga_state;
-		int32_t retry = 10;
-		do {
-			if (fpga_poke((fpga_addr_t)r_Command, FC_PULSE_ABORT) != 0) {
-				log_error("abort: can't command PULSE_ABORT");
-				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "poke failed", -1, e_errFPGA);
-			}
-
-			/* Azzero il data sent */
-			if (fpga_poke((fpga_addr_t)r_Datasent, 0) != 0) {
-				comm_error("can't write on datasent register");
-				return -1;
-			}
-
-			msleep(100);
-
-			state = fpga_peek(r_State);				//read fpga state register
-			if (state == -1) {
-				log_error("abort: can't get FPGA state");
-				return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "peek failed", -1, e_errFPGA);
-			}else{
-				fpga_state = state & 0x0000FFFF;
-			}
-
-		}
-		while (--retry > 0 && (fpga_state & MASK_ARMED) == PATT_ARMED);
-#else
-		(void)set_state(e_ready);
-#endif
-		break;
-	case e_trtmt:
-		log_info("ABORT in trtmt");	// XXX
-		// Arresto immediato del trattamento;
-#ifndef SIMULAZIONE
-		// Tieni traccia che stai per eseguire un abort
-		p_sv = acquireSharedVar();
-		p_sv->inAbort = TRUE;
-		releaseSharedVar(&p_sv);
-
-		if (fpga_poke((fpga_addr_t)r_Command, FC_PULSE_ABORT) != 0) {
-			log_error("abort: can't command PULSE_ABORT");
-			return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "poke failed", -1, e_errFPGA);
-		}
-		// Azzera contatore impulsi
-		if (fpga_peek((fpga_addr_t)r_PlsDelivered) < 0) {
-			log_error("abort: can't zero pulse counter");
-			return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "poke failed", -1, e_errFPGA);
-		}
-
-		/* Azzero il data sent */
-		if (fpga_poke((fpga_addr_t)r_Datasent, 0) != 0) {
-			comm_error("can't write on datasent register");
-			return -1;
-		}
-#else
-//		p_sv = acquireSharedVar();
-//		p_sv->HVadc = p_sv->HVdac =  0;
-//		p_sv->LVadc = p_sv->LVdac = 0;
-//		releaseSharedVar(&p_sv);
-
-        // Qualunque thread stia girando, bloccalo
-		task_cancel(&(p_stato->t));
-
-		(void)set_state(e_done);
-#endif
-		break;
-	case e_done:
-		log_info("ABORT in done");	// XXX
-		// cancellazione del bit FS_DONE -> ritorno allo stato READY
-
-#ifndef SIMULAZIONE
-		if (done2ready() != 0)
-			return makeAnswer(buffer, e_cmdSync, e_cmdKo, NULL, "FPGA comms error", -1, e_errFPGA);
-#else
-        // Qualunque thread stia girando, bloccalo
-		task_cancel(&(p_stato->t));
-
-		(void)set_state(e_ready);
-#endif
 		break;
 	default:
 		// In tutti gli altri casi si comporta come una no-op */
@@ -1104,51 +963,5 @@ static ssize_t fCmd_abort(t_stato *p_stato, t_cmd *pCmd, char *buffer,
 
 	/* Ack del comando */
 	ret = makeAnswer(buffer, e_cmdSync, e_cmdOk, NULL, "Abort activated", -1, -1);
-	return ret;
-}
-
-/******************************************************************************/
-/* Funzioni di supporto 													  */
-/******************************************************************************/
-
-/**
- * Avvia un comando asincrono.
- * NB: in caso di errore fatale, esce.
- */
-static void startAsync(t_cmd *pCmd, 	/** Descrittore del comando */
-					   int32_t cnt, 		/** Riferimento (progressivo) */
-					   t_stato *p_stato /** Dati di canale */)
-{
-	/* Facciamo partire il thread  */
-	assert(pCmd->threadStart != NULL);
-
-	task_create(&(p_stato->t), cnt, pCmd, p_stato);
-}
-
-/**
- * Fa l'ack del comando e avvia in modo mutuamente esclusivo il
- * task corrispondente.
- */
-static ssize_t mutex_startAsync(t_cmd * pCmd,
-								int32_t cnt,
-								t_stato *p_stato,
-								char *buffer)
-{
-	int32_t valid;
-	ssize_t ret;
-
-	pthread_mutex_lock(&(p_stato->t.mutex));
-	valid = p_stato->t.valid;
-	pthread_mutex_unlock(&(p_stato->t.mutex));
-
-	if (!valid) {
-		ret = makeAnswer(buffer, e_cmdAsyncAck, e_cmdOk, NULL, NULL, cnt, -1);
-		startAsync(pCmd, cnt, p_stato);
-	}
-	else {
-		log_error("%s: another task is running", pCmd->cmd);
-		ret = makeAnswer(buffer, e_cmdAsyncAck, e_cmdKo,
-							"Another task is running", NULL, cnt, e_errState);
-	}
 	return ret;
 }

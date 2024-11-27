@@ -1,2 +1,4 @@
-EXTRA_DIST = configure doc/epxcore.man
-SUBDIRS = doc src
+EXTRA_DIST = configure
+SUBDIRS = libep liblog src
+ACLOCAL_AMFLAGS = -I m4
+

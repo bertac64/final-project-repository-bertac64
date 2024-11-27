@@ -1,0 +1,19 @@
+# quando si fa commit
+nella repo : 
+>  eventuale git add dei file aggiunti
+>  git commit -a -m "comment"
+
+in yocto:
+bitbake -c cleansstate zepcore
+bitbake -c clean zepcore
+bitbake -c fetch -f zepcore
+bitbake core-image-minimal
+
+#per rifare autoconf da capo
+. /home/berta/work/final-project/final-project-repository-bertac64/petalinux
+libtoolize
+aclocal
+autoconf
+automake --add-missing
+autoreconf -fis
+./configure --host=arm

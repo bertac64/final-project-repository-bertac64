@@ -54,7 +54,7 @@ int reset_hardware(void)
 		return -1;
 	}
 	msleep(10);
-	if (fpga_poke((fpga_addr_t)r_Command, FC_HW_RESET) != 0) {
+/*	if (fpga_poke((fpga_addr_t)r_Command, FC_HW_RESET) != 0) {
 		comm_error("Can't reset hardware (2nd)");
 		return -1;
 	}
@@ -62,7 +62,7 @@ int reset_hardware(void)
 	if (fpga_poke((fpga_addr_t)r_Command, FC_AMP_OFF) != 0) {
 		comm_error("Can't turn amp off");
 		return -1;
-	}
+	}*/
 	log_warning("Hardware System Reset: done!");
 
 	return 0;
@@ -76,13 +76,6 @@ int reset_hardware(void)
  */
 int init_hardware(void)
 {
-
-	/* Accensione amplificatori */
-	if (fpga_poke((fpga_addr_t)r_Command, FC_AMP_ON) != 0) {
-		comm_error("can't turn on amplifiers");
-		return -1;
-	}
-
 	log_warning("Hardware System Init: done!");
 	return 0;
 }
@@ -97,8 +90,6 @@ int init_hardware(void)
  */
 int start_power(int32_t mode	/* Modo di invocazione (TRUE = in bite) */)
 {
-	char tmps[MAXSTR];
-	char * fname_calib = NULL;
 
 	(void)mode;
 

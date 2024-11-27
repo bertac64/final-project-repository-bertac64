@@ -18,7 +18,7 @@
 #include <sys/ioctl.h>
 #include <string.h>
 
-/* Librerie locali */
+/* local libraries */
 #include "../libep/libep.h"
 #include "../liblog/log.h"
 
@@ -32,11 +32,11 @@ extern volatile uint32_t *mm;
 extern Memory SRAM;
 
 
-int epcoredrv_open()
+int epsmdrv_open()
 {
-	SRAM.fd_dev = open ( EPCORE_DEV_NAME, O_RDWR);
+	SRAM.fd_dev = open ( EPSMD_DEV_NAME, O_RDWR);
 	if ( SRAM.fd_dev < 0 ) {
-		log_error("open(%s) failed (%d)\n", EPCORE_DEV_NAME, errno);
+		log_error("open(%s) failed (%d)\n", EPSMD_DEV_NAME, errno);
 		return 1;
 	}
 	memopen( 0x20000000, 0x20000000 );
@@ -44,7 +44,7 @@ int epcoredrv_open()
 	return 0;
 }
 
-int epcoredrv_close()
+int epsmdrv_close()
 {
 	close(SRAM.fd_dev);
 	SRAM.fd_dev = -1;
@@ -59,8 +59,8 @@ int64_t writeregister(uint32_t offset, uint32_t value){
 	reg.address = offset*4;
 	reg.data	= value;
 
-	if ( ioctl(SRAM.fd_dev, EPCORE_IOCTL_WRITE, &reg) < 0 ) {
-		log_error("EPCORE_IOCTL_WRITE failed (%d)\n", errno);
+	if ( ioctl(SRAM.fd_dev, EPSMD_IOCTL_WRITE, &reg) < 0 ) {
+		log_error("EPSMD_IOCTL_WRITE failed (%d)\n", errno);
 		return -1;
 	}
 	return (0);
@@ -72,8 +72,8 @@ int64_t readregister(uint32_t offset){
 	reg.address = offset*4;
 	reg.data    = 0xDEADBEEF;
 
-	if ( ioctl(SRAM.fd_dev, EPCORE_IOCTL_READ, &reg) < 0 ) {
-		log_error("EPCORE_IOCTL_WRITE failed (%d)\n", errno);
+	if ( ioctl(SRAM.fd_dev, EPSMD_IOCTL_READ, &reg) < 0 ) {
+		log_error("EPSMD_IOCTL_WRITE failed (%d)\n", errno);
 		return -1;
 	}
 	return reg.data;
@@ -84,9 +84,9 @@ int64_t memopen(uint32_t rambase, size_t dim){
 	int64_t retval = 0;
 
 	base = (off_t)rambase & PG_MASK;
-	printf("MMAP : %08lX : %08X\n", (long unsigned int)base, dim); fflush(stdout);
+	printf("MMAP : %08lX : %08lX\n", (long unsigned int)base, dim); fflush(stdout);
 
-	/* Apro il file descriptor per accedere alla memoria */
+	/* opening the file descriptor to get access tyo the memory */
 	SRAM.fd_mem = open("/dev/mem", O_RDWR);
 	if (SRAM.fd_mem < 0) {
 		log_error("open(/dev/mem) failed (%d)\n", errno);
@@ -96,7 +96,7 @@ int64_t memopen(uint32_t rambase, size_t dim){
 	mm = (volatile uint32_t *)mmap(NULL, (size_t)(dim), PROT_READ|PROT_WRITE, MAP_SHARED,
 			SRAM.fd_mem, base );
 	if (mm == MAP_FAILED) {
-		printf("mmap64(0x%x@0x%lx) failed (%d:%s)\n",
+		printf("mmap64(0x%lx@0x%lx) failed (%d:%s)\n",
 				dim, (long unsigned int)base, errno, strerror(errno));
 		retval = -1;
 	}
@@ -107,8 +107,8 @@ void memclose(size_t dim){
 
 	munmap((void *)mm, (size_t)(dim*8));
 }
-/* Scrittura in RAM
- * Ritorna il dato scritto
+/* RAM writing
+ * Returns the written data
  */
 
 int32_t writemem(uint32_t offset, uint32_t value){
@@ -121,8 +121,8 @@ int32_t writemem(uint32_t offset, uint32_t value){
 	return (retval);
 }
 
-/* lettura in RAM
- * Ritorna il dato letto
+/* RAM reading
+ * Returns the read data
  */
 int32_t readmem(uint32_t offset){
 	uint32_t value;

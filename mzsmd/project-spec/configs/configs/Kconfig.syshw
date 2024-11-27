@@ -902,6 +902,9 @@ endmenu
 
 
 
+config SUBSYSTEM_I2C_PS7_I2C_0_SELECT
+	bool
+	default y
 
 
 config SUBSYSTEM_USB_PS7_USB_0_SELECT

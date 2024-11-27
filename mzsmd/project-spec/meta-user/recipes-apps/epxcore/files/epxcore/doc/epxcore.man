@@ -1,22 +1,19 @@
-.\" This is a man page for the hello command.  It is intended to
-.\" be a model for writting man pages.
+.\" This is a man page for the epxcore program.  
 .
-.\" Written by Ima Koder, Tampa Florida USA, 3/2005.
-.TH HELLO 1 "3/27/2005" "(C) IK ShellScript Co." "Ima Koder"
+.\" Written by Claudio Bertacchini.
+.TH EPXCORE 1 "26/07/2024" "(C) bertac64" "Claudio Bertacchini"
 .
 .SH NAME
-hello \- Display a friendly greeting
+epxcore \- starts the communication server
 .
 .SH SYNOPSIS
-.B hello
+.B epxcore
 .
 .SH DESCRIPTION
 The
-.B hello
-command simply displays a short greeting to the world.
+.B epxcore
+command start the server used to communicate with the fpga.
 .
 .SH AUTHOR
-Ima Koder <hello-maintainer@fake.org
+Claudio Bertacchini <c.bertacchini@igeamedical.com
 .
-.SH SEE ALSO
-greet(1)

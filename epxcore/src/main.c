@@ -8,7 +8,6 @@
 
 /* POSIX.1 */
 #include <stdio.h>
-//#include "../bsp_0/ps7_cortexa9_0/include/xparameters.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -53,10 +52,8 @@
 
 int G_flgVerbose = 0;		/* livello di verbosita` per log e debug */
 int G_thPipe[2];			/* Comunicazione da task a main thread */
-t_epconf G_epconf;			/* Dati configurazione generale (RO a runtime) */
 t_map * G_map = NULL;		/* Mappa delle properties */
 char *G_fname_map = NULL;	/* Nome del file di properties */
-t_device G_device; 			/* struttura delle info sul device*/
 Memory SRAM;
 volatile uint32_t *mm;
 time_t valm_f = 0;
@@ -120,6 +117,7 @@ void usage(const char *prgname, const char *s)
 int main(int argc, char **argv)
 {
 	int c, j;
+	char z[MAXSTR];
 	pthread_t stato_th;
 	fd_set rset;
 	opterr = 0;
@@ -183,12 +181,9 @@ int main(int argc, char **argv)
 	signal(SIGCHLD, sig_chld);
 
 	/* Inizializzazioni varie */
-	//epcoredrv_open();
+	epsmdrv_open();
 	stato_init();
 	init_timer();
-
-	/* Inizializza il timeout idle di sessione SYS_TIDLE(se non c'e` usa il default) */
-	S_conn_tout = atoi(SYS_TIDLE)*1000;
 
 	/* Inizializza le variabili condivise (stato, ...) */
 	initSharedVar();
@@ -644,17 +639,13 @@ void * eval_state(void *par)
 	fpga_data_t alrm;
 	uint16_t fpga_alarm = 0;
 	uint16_t fpga_old_alarm;
-	t_mclock pulse_tout = 0;
-	int pulse_tick = 0;
-	int initial_pulse_tick;
 	enum e_state old_s = get_state();
 	fpga_state = fpga_old_state = 0x1800;
 	fpga_alarm = fpga_old_alarm = 0;
 
-	uint16_t fpga_val = 0;
+	int imp_count = 0;
 	uint16_t fpga_old_state2 = 0;
 	uint16_t fpga_state2 = 0;
-	t_sharedVar *p_sv;
 
 	(void)par;
 
@@ -662,15 +653,6 @@ void * eval_state(void *par)
 		enum e_state s = get_state();
 
 		if (s != e_idle) {
-			p_count = 0;
-			while(G_bulkComm == TRUE){
-				msleep(2);
-				if (p_count > 2500){
-					comm_error("bulk transfer exceeding 5 sec.");
-					break;
-				}
-				p_count ++;
-			}
 
 			do{
 				state = fpga_peek(r_State);				//read fpga state register
@@ -705,8 +687,7 @@ void * eval_state(void *par)
 
 			}while(fpga_state == fpga_alarm && fpga_state == fpga_state2);
 			
-			if (log_fpga &&
-				(fpga_old_state != fpga_state ||
+			if ((fpga_old_state != fpga_state ||
 				 fpga_old_state2 != fpga_state2 ||
 				 fpga_old_alarm != fpga_alarm)) {
 				//log_info("%04X %04X %04X", fpga_state, fpga_state2, fpga_alarm);
@@ -723,7 +704,6 @@ void * eval_state(void *par)
 									e_errAsyncHWInUnexpectedState, buffer,
 									"HW not in ready ($1=%04X;))",
 									(0x00FFFF)&fpga_state);
-					}
 					write2mainAll(buffer, nb);
 				}
 			}
@@ -739,17 +719,16 @@ void * eval_state(void *par)
 									"HW not in ready ($1=%04X;))",
 									(0x00FFFF)&fpga_state);
 					}
-					write2mainAll(buffer, nb);
-					s = e_blank;
-				}
-				sampling_period_ms = 2;
-				// Imposta lo stato calcolato
-				(void)set_state(s);
+				write2mainAll(buffer, nb);
+				s = e_blank;
 			}
-
+			sampling_period_ms = 2;
+			// Imposta lo stato calcolato
+			(void)set_state(s);
 		}
-		else /* s == e_idle */
+		else{ /* s == e_idle */
 			sampling_period_ms = 100;
+		}
 
 		// Segnala le variazioni a tutti i clienti collegati
 		if (s != old_s) {

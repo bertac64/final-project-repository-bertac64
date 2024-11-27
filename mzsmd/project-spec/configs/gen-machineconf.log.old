@@ -1,11 +1,5 @@
 [DEBUG] Using xsct from : /home/berta/Programmi/Petalinux/tools/xsct/bin/xsct
 [DEBUG] Using conf/mconf from : /home/berta/Programmi/Petalinux/components/yocto/buildtools/sysroots/x86_64-petalinux-linux/usr/bin/mconf
-[INFO] Generating Kconfig for project
-[DEBUG] Running CMD: xsct -sdx -nodisp /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/hw-description.tcl plnx_gen_hwsysconf /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/hw-description/system.xsa /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/configs/Kconfig.syshw
-[DEBUG] WARNING: sdtgen package cannot be loaded. System Device tree commands will not 
- be available
-INFO: [Hsi 55-2053] elapsed time for repository (/home/berta/Programmi/Petalinux/tools/xsct/data/embeddedsw) loading 0 seconds
-
 [INFO] Silentconfig project
 [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/config conf /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/configs/Kconfig
 [DEBUG] *
@@ -125,7 +119,7 @@ Extra dts/dtsi files (SUBSYSTEM_EXTRA_DT_FILES) []
 *
 generate boot args automatically (SUBSYSTEM_BOOTARGS_AUTO) [Y/n/?] 
 enable kernel earlyprintk (SUBSYSTEM_BOOTARGS_EARLYPRINTK) [Y/n/?] 
-Auto generated bootargs (NO EDIT!) (SUBSYSTEM_BOOTARGS_GENERATED) [console=ttyPS0,115200 earlycon root=/dev/mmcblk0p2 ro rootwait] 
+Auto generated bootargs (NO EDIT!) (SUBSYSTEM_BOOTARGS_GENERATED) [console=ttyPS0,115200 earlycon root=/dev/ram0 rw] 
 Add extra boot args (SUBSYSTEM_EXTRA_BOOTARGS) [] 
 Devicetree compiler flags (SUBSYSTEM_DEVICETREE_COMPILER_FLAGS) [-@] 
 Devicetree overlay (SUBSYSTEM_DTB_OVERLAY) [N/y/?] 
@@ -191,29 +185,30 @@ linux config target (SUBSYSTEM_LINUX_CONFIG_TARGET) []
 *
 Root filesystem type
   1. INITRAMFS (SUBSYSTEM_ROOTFS_INITRAMFS)
-  2. INITRD (SUBSYSTEM_ROOTFS_INITRD)
+> 2. INITRD (SUBSYSTEM_ROOTFS_INITRD)
   3. JFFS2 (SUBSYSTEM_ROOTFS_JFFS2)
   4. UBI/UBIFS (SUBSYSTEM_ROOTFS_UBIFS)
   5. NFS (SUBSYSTEM_ROOTFS_NFS)
-> 6. EXT4 (SD/eMMC/SATA/USB) (SUBSYSTEM_ROOTFS_EXT4)
+  6. EXT4 (SD/eMMC/SATA/USB) (SUBSYSTEM_ROOTFS_EXT4)
   7. other (SUBSYSTEM_ROOTFS_OTHER)
-choice[1-7]: Device node of SD device (SUBSYSTEM_SDROOT_DEV) [/dev/mmcblk0p2] 
+choice[1-7]: RAMDISK loadaddr (SUBSYSTEM_INITRD_RAMDISK_LOADADDR) [0x0] 
+INITRAMFS/INITRD Image name (SUBSYSTEM_INITRAMFS_IMAGE_NAME) [petalinux-image-minimal] 
 name for bootable kernel image (SUBSYSTEM_UIMAGE_NAME) [image.ub] 
-Root filesystem formats (SUBSYSTEM_RFS_FORMATS) [tar.gz ext4 ext4.gz wic] 
+Root filesystem formats (SUBSYSTEM_RFS_FORMATS) [cpio cpio.gz cpio.gz.u-boot ext4 tar.gz jffs2] 
 DTB padding size (SUBSYSTEM_DTB_PADDING_SIZE) [0x1000] 
 Copy final images to tftpboot (SUBSYSTEM_COPY_TO_TFTPBOOT) [Y/n/?] 
   tftpboot directory (SUBSYSTEM_TFTPBOOT_DIR) [/tftpboot] 
 *
 * Firmware Version Configuration
 *
-Host name (SUBSYSTEM_HOSTNAME) [mz7020-som-base-2023-2] 
-Product name (SUBSYSTEM_PRODUCT) [mz7020_som_base_2023_2] 
+Host name (SUBSYSTEM_HOSTNAME) [mzsmd] 
+Product name (SUBSYSTEM_PRODUCT) [mzsmd] 
 Firmware Version (SUBSYSTEM_FW_VERSION) [1.00] 
 *
 * Yocto Settings
 *
-Yocto Machine Name (YOCTO_MACHINE_NAME) [mz7020-som-base] 
-Yocto Include Machine name (YOCTO_INCLUDE_MACHINE_NAME) [mz7020-som-base] 
+Yocto Machine Name (YOCTO_MACHINE_NAME) [zynq-generic] 
+Yocto Include Machine name (YOCTO_INCLUDE_MACHINE_NAME) [] 
 Yocto Additional Overrides (YOCTO_ADD_OVERRIDES) [] 
 *
 * TMPDIR Location
@@ -234,7 +229,7 @@ Set number of parallel make -j (PARALLEL_MAKE) (YOCTO_PARALLEL_MAKE) []
 *
 * Add pre-mirror url 
 *
-pre-mirror url path (PRE_MIRROR_URL) [file:///downloads_2023.2/] 
+pre-mirror url path (PRE_MIRROR_URL) [http://petalinux.xilinx.com/sswreleases/rel-v${PETALINUX_MAJOR_VER}/downloads] 
 *
 * Local sstate feeds settings
 *
@@ -249,19 +244,10 @@ Enable Buildtools Extended (YOCTO_BUILDTOOLS_EXTENDED) [N/y/?]
 *
 * User Layers
 *
-user layer 0 (USER_LAYER_0) [${PROOT}/project-spec/meta-avnet] 
-  user layer 1 (USER_LAYER_1) [] 
+user layer 0 (USER_LAYER_0) [] 
 #
 # configuration written to /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/config
 #
-[DEBUG] Running CMD: xsct -sdx -nodisp /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/petalinux_hsm.tcl get_flash_width_parts /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/config /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/data/ipinfo.yaml /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/hw-description/system.xsa /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/flash_parts.txt
-[DEBUG] WARNING: sdtgen package cannot be loaded. System Device tree commands will not 
- be available
-INFO: [Hsi 55-2053] elapsed time for repository (/home/berta/Programmi/Petalinux/tools/xsct/data/embeddedsw) loading 0 seconds
-
-[INFO] Generating kconfig for rootfs
-[DEBUG] Running CMD: python3 /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/rootfsconfigs/rootfs_config.py --generate_kconfig /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/meta-user/conf/user-rootfsconfig /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/rootfsconfigs
-[DEBUG] 
 [INFO] Silentconfig rootfs
 [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/rootfs_config conf /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/rootfsconfigs/Kconfig
 [DEBUG] *
@@ -350,7 +336,7 @@ diffutils-dev (diffutils-dev) [N/y/?]
 *
 * dnf
 *
-dnf (dnf) [N/y/?] 
+dnf (dnf) [Y/n/?] 
 *
 * e2fsprogs 
 *
@@ -711,16 +697,16 @@ nfs-utils-dbg (nfs-utils-dbg) [N/y/?]
 *
 * openssh 
 *
-openssh (openssh) [N/y/?] 
+openssh (openssh) [Y/n/?] 
 openssh-misc (openssh-misc) [N/y/?] 
 openssh-dbg (openssh-dbg) [N/y/?] 
 openssh-sshd (openssh-sshd) [N/y/?] 
 openssh-keygen (openssh-keygen) [N/y/?] 
-openssh-ssh (openssh-ssh) [N/y/?] 
+openssh-ssh (openssh-ssh) [Y/n/?] 
 openssh-dev (openssh-dev) [N/y/?] 
 openssh-sftp (openssh-sftp) [N/y/?] 
 openssh-sftp-server (openssh-sftp-server) [N/y/?] 
-openssh-scp (openssh-scp) [N/y/?] 
+openssh-scp (openssh-scp) [Y/n/?] 
 *
 * ppp 
 *
@@ -872,7 +858,7 @@ hdparm-dev (hdparm-dev) [N/y/?]
 *
 * less 
 *
-less (less) [N/y/?] 
+less (less) [Y/n/?] 
 less-dev (less-dev) [N/y/?] 
 less-dbg (less-dbg) [N/y/?] 
 *
@@ -966,8 +952,8 @@ unzip-dev (unzip-dev) [N/y/?]
 *
 * vim 
 *
-vim (vim) [N/y/?] 
-vim-syntax (vim-syntax) [N/y/?] 
+vim (vim) [Y/n/?] 
+vim-syntax (vim-syntax) [Y/n/?] 
 vim-dev (vim-dev) [N/y/?] 
 vim-help (vim-help) [N/y/?] 
 vim-common (vim-common) [N/y/?] 
@@ -3604,32 +3590,17 @@ Init-manager
 choice[1-2]: *
 * user packages 
 *
+epsmdrv (epsmdrv) [Y/n/?] 
+epxcore (epxcore) [Y/n/?] 
 gpio-demo (gpio-demo) [N/y/?] 
 peekpoke (peekpoke) [N/y/?] 
 *
 * PetaLinux RootFS Settings
 *
-Add Extra Users (ADD_EXTRA_USERS) [root:root;petalinux::passwd-expire;] 
+Add Extra Users (ADD_EXTRA_USERS) [root:!q2w3e4-r5;petalinux:1q2w3e4r] 
 Create new Groups (CREATE_NEW_GROUPS) [aie;] 
 Add Users to Groups (ADD_USERS_TO_GROUPS) [petalinux:audio,video,aie,input;] 
 Add Users to Sudo users (ADD_USERS_TO_SUDOERS) [petalinux] 
 #
 # configuration written to /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/rootfs_config
 #
-[INFO] Adding user layers
-[DEBUG] Adding layer: /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/meta-avnet
-[DEBUG] Running CMD: bitbake-layers -F add-layer /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/meta-avnet
-[DEBUG] NOTE: Starting bitbake server...
-NOTE: Started PRServer with DBfile: /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/build/cache/prserv.sqlite3, Address: 127.0.0.1:37137, PID: 3912
-
-[DEBUG] Adding layer: /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/meta-user
-[DEBUG] Running CMD: bitbake-layers -F add-layer /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/meta-user
-[DEBUG] NOTE: Starting bitbake server...
-NOTE: Started PRServer with DBfile: /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/build/cache/prserv.sqlite3, Address: 127.0.0.1:41957, PID: 3938
-
-[INFO] Generating machine conf file
-[INFO] Generating plnxtool conf file
-[DEBUG] Running CMD: nslookup -timeout=10 gitenterprise.xilinx.com | grep "Address" |                 awk '{print $2}' | sed -n 2p
-[DEBUG] 
-[DEBUG] Running CMD: python3 /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/rootfsconfigs/rootfs_config.py --update_cfg /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/rootfs_config /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/plnxtool.conf zynq
-[DEBUG] 

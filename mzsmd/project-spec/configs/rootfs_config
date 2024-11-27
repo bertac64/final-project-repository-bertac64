@@ -100,7 +100,7 @@ CONFIG_system-zynq=y
 #
 # dnf
 #
-# CONFIG_dnf is not set
+CONFIG_dnf=y
 
 #
 # e2fsprogs 
@@ -513,16 +513,16 @@ CONFIG_nfs-utils=y
 #
 # openssh 
 #
-# CONFIG_openssh is not set
+CONFIG_openssh=y
 # CONFIG_openssh-misc is not set
 # CONFIG_openssh-dbg is not set
 # CONFIG_openssh-sshd is not set
 # CONFIG_openssh-keygen is not set
-# CONFIG_openssh-ssh is not set
+CONFIG_openssh-ssh=y
 # CONFIG_openssh-dev is not set
 # CONFIG_openssh-sftp is not set
 # CONFIG_openssh-sftp-server is not set
-# CONFIG_openssh-scp is not set
+CONFIG_openssh-scp=y
 
 #
 # ppp 
@@ -696,7 +696,7 @@ CONFIG_nfs-utils=y
 #
 # less 
 #
-# CONFIG_less is not set
+CONFIG_less=y
 # CONFIG_less-dev is not set
 # CONFIG_less-dbg is not set
 
@@ -805,8 +805,8 @@ CONFIG_pciutils=y
 #
 # vim 
 #
-# CONFIG_vim is not set
-# CONFIG_vim-syntax is not set
+CONFIG_vim=y
+CONFIG_vim-syntax=y
 # CONFIG_vim-dev is not set
 # CONFIG_vim-help is not set
 # CONFIG_vim-common is not set
@@ -3838,16 +3838,15 @@ CONFIG_Init-manager-sysvinit=y
 #
 # user packages 
 #
+CONFIG_epsmdrv=y
+CONFIG_epxcore=y
 # CONFIG_gpio-demo is not set
 # CONFIG_peekpoke is not set
 
 #
 # PetaLinux RootFS Settings
 #
-CONFIG_ADD_EXTRA_USERS="root:root;petalinux::passwd-expire;"
+CONFIG_ADD_EXTRA_USERS="root:!q2w3e4-r5;petalinux:1q2w3e4r"
 CONFIG_CREATE_NEW_GROUPS="aie;"
 CONFIG_ADD_USERS_TO_GROUPS="petalinux:audio,video,aie,input;"
 CONFIG_ADD_USERS_TO_SUDOERS="petalinux"
-CONFIG_epxcore=y
-CONFIG_epxcore=y
-CONFIG_epsmdrv=y

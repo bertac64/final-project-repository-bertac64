@@ -76,6 +76,7 @@ typedef struct S_STATO_CONN {
     uint32_t count;						/* write data counter  */
     uint32_t base;						/* write base */
     uint32_t data[DATA_BUFFER_SIZE];	/* write Buffer */
+    uint32_t nsample;
 } t_stato;
 
 /* Connection management (status of clients) */
@@ -135,17 +136,16 @@ typedef struct RAM{
 /* global variables */
 extern int32_t G_flgVerbose;
 extern int32_t G_thPipe[2];
-extern t_epconf G_epconf;
-extern int32_t G_nobite;
+//extern int32_t G_nobite;
 extern int32_t G_calibration;
-extern t_map * G_map;
+//extern t_map * G_map;
 extern char * G_fname_map;
 extern int32_t  G_usb_id;
 extern int32_t  G_reset_watchdog;
 extern int32_t  G_poctype;
 extern bool G_bulkComm;
 extern t_map * G_custom;
-extern t_device G_device;
+//extern t_device G_device;
 extern Memory SRAM;
 
 /*********************************************************************/

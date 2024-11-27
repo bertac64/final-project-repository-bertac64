@@ -1,0 +1,13 @@
+/.deps/
+/.settings/
+/_depends
+/.autotools
+/.cproject
+/.gdbinit
+/.project
+/liblog_gdb_arm-poky-linux-gnueabi.launch
+/liblog.a
+/liblog-0.a
+/log.o
+/Makefile
+/Makefile.in

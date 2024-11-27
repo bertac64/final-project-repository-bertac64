@@ -1,8 +1,7 @@
 */*/config.old
 */*/rootfs_config.old
 build/
-images/linux/*.wic
-images/linux/*.ext4
+images/linux/
 pre-built/linux/
 .petalinux/*
 !.petalinux/metadata
