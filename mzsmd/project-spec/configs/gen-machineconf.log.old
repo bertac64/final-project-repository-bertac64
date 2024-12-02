@@ -44,19 +44,19 @@ Subsystem AUTO Hardware Settings (SUBSYSTEM_HARDWARE_AUTO) [Y/?] y
   * Serial Settings
   *
   FSBL Serial stdin/stdout
-  > 1. ps7_uart_1 (SUBSYSTEM_FSBL_SERIAL_PS7_UART_1_SELECT)
+  > 1. ps7_uart_0 (SUBSYSTEM_FSBL_SERIAL_PS7_UART_0_SELECT)
     2. manual (SUBSYSTEM_FSBL_SERIAL_MANUAL_SELECT)
   choice[1-2?]:   DTG Serial stdin/stdout
-  > 1. ps7_uart_1 (SUBSYSTEM_SERIAL_PS7_UART_1_SELECT)
+  > 1. ps7_uart_0 (SUBSYSTEM_SERIAL_PS7_UART_0_SELECT)
     2. manual (SUBSYSTEM_SERIAL_MANUAL_SELECT)
-  choice[1-2?]:   System stdin/stdout baudrate for ps7_uart_1
-    1. 600 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_600)
-    2. 9600 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_9600)
-    3. 28800 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_28800)
-  > 4. 115200 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_115200)
-    5. 230400 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_230400)
-    6. 460800 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_460800)
-    7. 921600 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_921600)
+  choice[1-2?]:   System stdin/stdout baudrate for ps7_uart_0
+    1. 600 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_600)
+    2. 9600 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_9600)
+    3. 28800 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_28800)
+  > 4. 115200 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_115200)
+    5. 230400 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_230400)
+    6. 460800 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_460800)
+    7. 921600 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_921600)
   choice[1-7]:   *
   * Ethernet Settings
   *
@@ -96,7 +96,7 @@ Subsystem AUTO Hardware Settings (SUBSYSTEM_HARDWARE_AUTO) [Y/?] y
   * SD/SDIO Settings
   *
   Primary SD/SDIO
-  > 1. ps7_sd_0 (SUBSYSTEM_PRIMARY_SD_PS7_SD_0_SELECT)
+  > 1. ps7_sd_1 (SUBSYSTEM_PRIMARY_SD_PS7_SD_1_SELECT)
     2. manual (SUBSYSTEM_PRIMARY_SD_MANUAL_SELECT)
   choice[1-2?]:   *
   * RTC Settings
@@ -147,7 +147,7 @@ u-boot config target (SUBSYSTEM_UBOOT_CONFIG_TARGET) [xilinx_zynq_virt_defconfig
 * u-boot script configuration
 *
 Append base address to image offsets (SUBSYSTEM_UBOOT_APPEND_BASEADDR) [Y/n/?] 
-Pre bootenv (SUBSYSTEM_UBOOT_PRE_BOOTENV) [] 
+Pre bootenv (SUBSYSTEM_UBOOT_PRE_BOOTENV) [boot.scr] 
 *
 * JTAG/DDR image offsets
 *
@@ -336,7 +336,7 @@ diffutils-dev (diffutils-dev) [N/y/?]
 *
 * dnf
 *
-dnf (dnf) [Y/n/?] 
+dnf (dnf) [N/y/?] 
 *
 * e2fsprogs 
 *
@@ -665,7 +665,7 @@ curl-dbg (curl-dbg) [N/y/?]
 *
 * dropbear 
 *
-dropbear (dropbear) [N/y/?] 
+dropbear (dropbear) [Y/n/?] 
 dropbear-dev (dropbear-dev) [N/y/?] 
 dropbear-dbg (dropbear-dbg) [N/y/?] 
 *
@@ -697,16 +697,16 @@ nfs-utils-dbg (nfs-utils-dbg) [N/y/?]
 *
 * openssh 
 *
-openssh (openssh) [Y/n/?] 
+openssh (openssh) [N/y/?] 
 openssh-misc (openssh-misc) [N/y/?] 
 openssh-dbg (openssh-dbg) [N/y/?] 
 openssh-sshd (openssh-sshd) [N/y/?] 
 openssh-keygen (openssh-keygen) [N/y/?] 
-openssh-ssh (openssh-ssh) [Y/n/?] 
+openssh-ssh (openssh-ssh) [N/y/?] 
 openssh-dev (openssh-dev) [N/y/?] 
 openssh-sftp (openssh-sftp) [N/y/?] 
 openssh-sftp-server (openssh-sftp-server) [N/y/?] 
-openssh-scp (openssh-scp) [Y/n/?] 
+openssh-scp (openssh-scp) [N/y/?] 
 *
 * ppp 
 *
@@ -3577,8 +3577,8 @@ packagegroup-petalinux-x11-dev (packagegroup-petalinux-x11-dev) [N/y/?]
 *
 * Image Features
 *
-ssh-server-dropbear (imagefeature-ssh-server-dropbear) [N/y/?] 
-ssh-server-openssh (imagefeature-ssh-server-openssh) [Y/n/?] 
+ssh-server-dropbear (imagefeature-ssh-server-dropbear) [Y/n/?] 
+ssh-server-openssh (imagefeature-ssh-server-openssh) [N/y/?] 
 hwcodecs (imagefeature-hwcodecs) [Y/n/?] 
 package-management (imagefeature-package-management) [N/y/?] 
 debug-tweaks (imagefeature-debug-tweaks) [N/y/?] 
