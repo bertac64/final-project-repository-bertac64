@@ -24,7 +24,7 @@ struct t_log_out
 	enum t_log_level level;
 };
 
-// per la gestione della mappa degli out
+// management of outputs map
 static struct t_log_out * s_out;
 static size_t s_out_size=0;
 static size_t s_out_afterlast=0;
@@ -94,7 +94,7 @@ static void s_printout(enum t_log_level w, const char * message, va_list ap)
 	else
 		snprintf(buf, buf_size, "%s %s %s \n", ts, eee, message);
 
-	const size_t z = 1024; //TODO dimensione massima del messaggio di log
+	const size_t z = 1024; //TODO max dimension of the log message
 	char str[z];
 	vsnprintf(str, z, buf, ap);
 
@@ -113,7 +113,7 @@ static void s_printout(enum t_log_level w, const char * message, va_list ap)
 void log_init(const char * progname)
 {
 	assert(progname != NULL);
-	assert(s_progname == NULL); //verifica che non sia gia` inizializzato
+	assert(s_progname == NULL); //check if not initialized
 
 	s_enablesys = 0;
 
@@ -332,16 +332,16 @@ void log_enablesys(int x)
 	s_enablesys = (x!=0);
 }
 
-/******************************************************************************/
+/********************************************************************************/
 
 /**
- *	DESCRIZIONE
- *		Fa un dump (ascii o esadecimale) di un buffer.
- *	VALORI DI RITORNO
- *		Nessuno.
- */
-void log_dump(const char *buf,    	/** Buffer di cui eseuire il dump */
-         	  size_t l    	    	/** Lunghezza del buffer          */)
+* DESCRIPTION
+* Dumps (ascii or hex) a buffer.
+* RETURN VALUES
+* None.
+*/
+void log_dump(const char *buf,    	/** Dump Buffer */
+         	  size_t l    	    	/** Buffer length */)
 {
     char s[256] = "\0", stmp[256] = "\0", *ps = 0, *pw = 0;
     unsigned int j=0, i=0;

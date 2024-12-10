@@ -1,22 +1,22 @@
-// $Id: libep.h 131 2010-01-19 09:03:24Z borgia $
+// $Id: libep.h bertac64 $
 
 #ifndef UTIL_H_
 #define UTIL_H_
 
 #include <stdint.h>
 
-#define MAXBUF		4096		/* max dimensione buffer in tx/rx */
+#define MAXBUF		4096		/* max dimension of tx/rx buffer */
 
 #define EQUAL_F(a,b)	(fabs((a)-(b)) < 1e-6)
 
 typedef struct PROTO_CONN {
-	unsigned int status;		/* Varie stati (cfr. S_*) */
-	size_t nb;					/* Numero dati ricevuti sul canale */
-	unsigned char b[MAXBUF];	/* Buffer di ricezione */
+	unsigned int status;		/* Status (cfr. S_*) */
+	size_t nb;					/* number of data reveived on the channel */
+	unsigned char b[MAXBUF];	/* Receiving Buffer */
 } t_proto;
 
 
-// mappa per la configurazione
+// configuration map
 typedef struct PM_MAP {
 	char *key;
 	char *val;

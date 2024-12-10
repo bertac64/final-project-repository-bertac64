@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = foreign 
+
 include $(srcdir)/common.mk
 
 CFLAGS = -Wall

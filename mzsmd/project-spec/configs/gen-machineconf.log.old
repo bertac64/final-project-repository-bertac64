@@ -44,19 +44,19 @@ Subsystem AUTO Hardware Settings (SUBSYSTEM_HARDWARE_AUTO) [Y/?] y
   * Serial Settings
   *
   FSBL Serial stdin/stdout
-  > 1. ps7_uart_0 (SUBSYSTEM_FSBL_SERIAL_PS7_UART_0_SELECT)
+  > 1. ps7_uart_1 (SUBSYSTEM_FSBL_SERIAL_PS7_UART_1_SELECT)
     2. manual (SUBSYSTEM_FSBL_SERIAL_MANUAL_SELECT)
   choice[1-2?]:   DTG Serial stdin/stdout
-  > 1. ps7_uart_0 (SUBSYSTEM_SERIAL_PS7_UART_0_SELECT)
+  > 1. ps7_uart_1 (SUBSYSTEM_SERIAL_PS7_UART_1_SELECT)
     2. manual (SUBSYSTEM_SERIAL_MANUAL_SELECT)
-  choice[1-2?]:   System stdin/stdout baudrate for ps7_uart_0
-    1. 600 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_600)
-    2. 9600 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_9600)
-    3. 28800 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_28800)
-  > 4. 115200 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_115200)
-    5. 230400 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_230400)
-    6. 460800 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_460800)
-    7. 921600 (SUBSYSTEM_SERIAL_PS7_UART_0_BAUDRATE_921600)
+  choice[1-2?]:   System stdin/stdout baudrate for ps7_uart_1
+    1. 600 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_600)
+    2. 9600 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_9600)
+    3. 28800 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_28800)
+  > 4. 115200 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_115200)
+    5. 230400 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_230400)
+    6. 460800 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_460800)
+    7. 921600 (SUBSYSTEM_SERIAL_PS7_UART_1_BAUDRATE_921600)
   choice[1-7]:   *
   * Ethernet Settings
   *
@@ -96,7 +96,7 @@ Subsystem AUTO Hardware Settings (SUBSYSTEM_HARDWARE_AUTO) [Y/?] y
   * SD/SDIO Settings
   *
   Primary SD/SDIO
-  > 1. ps7_sd_1 (SUBSYSTEM_PRIMARY_SD_PS7_SD_1_SELECT)
+  > 1. ps7_sd_0 (SUBSYSTEM_PRIMARY_SD_PS7_SD_0_SELECT)
     2. manual (SUBSYSTEM_PRIMARY_SD_MANUAL_SELECT)
   choice[1-2?]:   *
   * RTC Settings
@@ -119,7 +119,7 @@ Extra dts/dtsi files (SUBSYSTEM_EXTRA_DT_FILES) []
 *
 generate boot args automatically (SUBSYSTEM_BOOTARGS_AUTO) [Y/n/?] 
 enable kernel earlyprintk (SUBSYSTEM_BOOTARGS_EARLYPRINTK) [Y/n/?] 
-Auto generated bootargs (NO EDIT!) (SUBSYSTEM_BOOTARGS_GENERATED) [console=ttyPS0,115200 earlycon root=/dev/ram0 rw] 
+Auto generated bootargs (NO EDIT!) (SUBSYSTEM_BOOTARGS_GENERATED) [console=ttyPS0,115200 earlycon root=/dev/mmcblk0p2 ro rootwait] 
 Add extra boot args (SUBSYSTEM_EXTRA_BOOTARGS) [] 
 Devicetree compiler flags (SUBSYSTEM_DEVICETREE_COMPILER_FLAGS) [-@] 
 Devicetree overlay (SUBSYSTEM_DTB_OVERLAY) [N/y/?] 
@@ -147,7 +147,7 @@ u-boot config target (SUBSYSTEM_UBOOT_CONFIG_TARGET) [xilinx_zynq_virt_defconfig
 * u-boot script configuration
 *
 Append base address to image offsets (SUBSYSTEM_UBOOT_APPEND_BASEADDR) [Y/n/?] 
-Pre bootenv (SUBSYSTEM_UBOOT_PRE_BOOTENV) [boot.scr] 
+Pre bootenv (SUBSYSTEM_UBOOT_PRE_BOOTENV) [] 
 *
 * JTAG/DDR image offsets
 *
@@ -185,30 +185,29 @@ linux config target (SUBSYSTEM_LINUX_CONFIG_TARGET) []
 *
 Root filesystem type
   1. INITRAMFS (SUBSYSTEM_ROOTFS_INITRAMFS)
-> 2. INITRD (SUBSYSTEM_ROOTFS_INITRD)
+  2. INITRD (SUBSYSTEM_ROOTFS_INITRD)
   3. JFFS2 (SUBSYSTEM_ROOTFS_JFFS2)
   4. UBI/UBIFS (SUBSYSTEM_ROOTFS_UBIFS)
   5. NFS (SUBSYSTEM_ROOTFS_NFS)
-  6. EXT4 (SD/eMMC/SATA/USB) (SUBSYSTEM_ROOTFS_EXT4)
+> 6. EXT4 (SD/eMMC/SATA/USB) (SUBSYSTEM_ROOTFS_EXT4)
   7. other (SUBSYSTEM_ROOTFS_OTHER)
-choice[1-7]: RAMDISK loadaddr (SUBSYSTEM_INITRD_RAMDISK_LOADADDR) [0x0] 
-INITRAMFS/INITRD Image name (SUBSYSTEM_INITRAMFS_IMAGE_NAME) [petalinux-image-minimal] 
+choice[1-7]: Device node of SD device (SUBSYSTEM_SDROOT_DEV) [/dev/mmcblk0p2] 
 name for bootable kernel image (SUBSYSTEM_UIMAGE_NAME) [image.ub] 
-Root filesystem formats (SUBSYSTEM_RFS_FORMATS) [cpio cpio.gz cpio.gz.u-boot ext4 tar.gz jffs2] 
+Root filesystem formats (SUBSYSTEM_RFS_FORMATS) [tar.gz ext4 ext4.gz wic] 
 DTB padding size (SUBSYSTEM_DTB_PADDING_SIZE) [0x1000] 
 Copy final images to tftpboot (SUBSYSTEM_COPY_TO_TFTPBOOT) [Y/n/?] 
   tftpboot directory (SUBSYSTEM_TFTPBOOT_DIR) [/tftpboot] 
 *
 * Firmware Version Configuration
 *
-Host name (SUBSYSTEM_HOSTNAME) [mzsmd] 
-Product name (SUBSYSTEM_PRODUCT) [mzsmd] 
+Host name (SUBSYSTEM_HOSTNAME) [mz7020-som-base-2023-2] 
+Product name (SUBSYSTEM_PRODUCT) [mz7020_som_base_2023_2] 
 Firmware Version (SUBSYSTEM_FW_VERSION) [1.00] 
 *
 * Yocto Settings
 *
-Yocto Machine Name (YOCTO_MACHINE_NAME) [zynq-generic] 
-Yocto Include Machine name (YOCTO_INCLUDE_MACHINE_NAME) [] 
+Yocto Machine Name (YOCTO_MACHINE_NAME) [mz7020-som-base] 
+Yocto Include Machine name (YOCTO_INCLUDE_MACHINE_NAME) [mz7020-som-base] 
 Yocto Additional Overrides (YOCTO_ADD_OVERRIDES) [] 
 *
 * TMPDIR Location
@@ -229,7 +228,7 @@ Set number of parallel make -j (PARALLEL_MAKE) (YOCTO_PARALLEL_MAKE) []
 *
 * Add pre-mirror url 
 *
-pre-mirror url path (PRE_MIRROR_URL) [http://petalinux.xilinx.com/sswreleases/rel-v${PETALINUX_MAJOR_VER}/downloads] 
+pre-mirror url path (PRE_MIRROR_URL) [file:///downloads_2023.2/] 
 *
 * Local sstate feeds settings
 *
@@ -244,7 +243,8 @@ Enable Buildtools Extended (YOCTO_BUILDTOOLS_EXTENDED) [N/y/?]
 *
 * User Layers
 *
-user layer 0 (USER_LAYER_0) [] 
+user layer 0 (USER_LAYER_0) [${PROOT}/project-spec/meta-avnet] 
+  user layer 1 (USER_LAYER_1) [] 
 #
 # configuration written to /home/berta/work/final-project/final-project-repository-bertac64/mzsmd/project-spec/configs/config
 #
@@ -262,7 +262,7 @@ user layer 0 (USER_LAYER_0) []
 *
 * sudo 
 *
-sudo (sudo) [N/y/?] 
+sudo (sudo) [Y/n/?] 
 sudo-dbg (sudo-dbg) [N/y/?] 
 sudo-dev (sudo-dev) [N/y/?] 
 *
@@ -290,7 +290,7 @@ bc-dbg (bc-dbg) [N/y/?]
 *
 * busybox 
 *
-busybox (busybox) [N/y/?] 
+busybox (busybox) [Y/n/?] 
 busybox-udhcpd (busybox-udhcpd) [N/y/?] 
 busybox-httpd (busybox-httpd) [N/y/?] 
 busybox-dbg (busybox-dbg) [N/y/?] 
@@ -298,7 +298,7 @@ busybox-inetd (busybox-inetd) [N/y/?]
 busybox-dev (busybox-dev) [N/y/?] 
 busybox-hwclock (busybox-hwclock) [N/y/?] 
 busybox-udhcpc (busybox-udhcpc) [N/y/?] 
-busybox-syslog (busybox-syslog) [N/y/?] 
+busybox-syslog (busybox-syslog) [Y/n/?] 
 *
 * cpio 
 *
@@ -665,7 +665,7 @@ curl-dbg (curl-dbg) [N/y/?]
 *
 * dropbear 
 *
-dropbear (dropbear) [Y/n/?] 
+dropbear (dropbear) [N/y/?] 
 dropbear-dev (dropbear-dev) [N/y/?] 
 dropbear-dbg (dropbear-dbg) [N/y/?] 
 *
@@ -858,7 +858,7 @@ hdparm-dev (hdparm-dev) [N/y/?]
 *
 * less 
 *
-less (less) [Y/n/?] 
+less (less) [N/y/?] 
 less-dev (less-dev) [N/y/?] 
 less-dbg (less-dbg) [N/y/?] 
 *
@@ -952,8 +952,8 @@ unzip-dev (unzip-dev) [N/y/?]
 *
 * vim 
 *
-vim (vim) [Y/n/?] 
-vim-syntax (vim-syntax) [Y/n/?] 
+vim (vim) [N/y/?] 
+vim-syntax (vim-syntax) [N/y/?] 
 vim-dev (vim-dev) [N/y/?] 
 vim-help (vim-help) [N/y/?] 
 vim-common (vim-common) [N/y/?] 
@@ -2018,7 +2018,7 @@ protobuf (protobuf) [N/y/?]
 *
 * zlib 
 *
-zlib (zlib) [N/y/?] 
+zlib (zlib) [Y/n/?] 
 zlib-dbg (zlib-dbg) [N/y/?] 
 zlib-dev (zlib-dev) [N/y/?] 
 *
@@ -3577,8 +3577,8 @@ packagegroup-petalinux-x11-dev (packagegroup-petalinux-x11-dev) [N/y/?]
 *
 * Image Features
 *
-ssh-server-dropbear (imagefeature-ssh-server-dropbear) [Y/n/?] 
-ssh-server-openssh (imagefeature-ssh-server-openssh) [N/y/?] 
+ssh-server-dropbear (imagefeature-ssh-server-dropbear) [N/y/?] 
+ssh-server-openssh (imagefeature-ssh-server-openssh) [Y/n/?] 
 hwcodecs (imagefeature-hwcodecs) [Y/n/?] 
 package-management (imagefeature-package-management) [N/y/?] 
 debug-tweaks (imagefeature-debug-tweaks) [N/y/?] 
@@ -3597,7 +3597,7 @@ peekpoke (peekpoke) [N/y/?]
 *
 * PetaLinux RootFS Settings
 *
-Add Extra Users (ADD_EXTRA_USERS) [root:!q2w3e4-r5;petalinux:1q2w3e4r] 
+Add Extra Users (ADD_EXTRA_USERS) [root:root;petalinux:1q2w3e4r;] 
 Create new Groups (CREATE_NEW_GROUPS) [aie;] 
 Add Users to Groups (ADD_USERS_TO_GROUPS) [petalinux:audio,video,aie,input;] 
 Add Users to Sudo users (ADD_USERS_TO_SUDOERS) [petalinux] 

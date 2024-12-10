@@ -15,7 +15,7 @@ CONFIG_system-zynq=y
 #
 # sudo 
 #
-# CONFIG_sudo is not set
+CONFIG_sudo=y
 # CONFIG_sudo-dbg is not set
 # CONFIG_sudo-dev is not set
 
@@ -48,7 +48,7 @@ CONFIG_system-zynq=y
 #
 # busybox 
 #
-# CONFIG_busybox is not set
+CONFIG_busybox=y
 # CONFIG_busybox-udhcpd is not set
 # CONFIG_busybox-httpd is not set
 # CONFIG_busybox-dbg is not set
@@ -56,7 +56,7 @@ CONFIG_system-zynq=y
 # CONFIG_busybox-dev is not set
 # CONFIG_busybox-hwclock is not set
 # CONFIG_busybox-udhcpc is not set
-# CONFIG_busybox-syslog is not set
+CONFIG_busybox-syslog=y
 
 #
 # cpio 
@@ -476,7 +476,7 @@ CONFIG_can-utils=y
 #
 # dropbear 
 #
-CONFIG_dropbear=y
+# CONFIG_dropbear is not set
 # CONFIG_dropbear-dev is not set
 # CONFIG_dropbear-dbg is not set
 
@@ -696,7 +696,7 @@ CONFIG_nfs-utils=y
 #
 # less 
 #
-CONFIG_less=y
+# CONFIG_less is not set
 # CONFIG_less-dev is not set
 # CONFIG_less-dbg is not set
 
@@ -805,8 +805,8 @@ CONFIG_pciutils=y
 #
 # vim 
 #
-CONFIG_vim=y
-CONFIG_vim-syntax=y
+# CONFIG_vim is not set
+# CONFIG_vim-syntax is not set
 # CONFIG_vim-dev is not set
 # CONFIG_vim-help is not set
 # CONFIG_vim-common is not set
@@ -2036,7 +2036,7 @@ CONFIG_run-postinsts=y
 #
 # zlib 
 #
-# CONFIG_zlib is not set
+CONFIG_zlib=y
 # CONFIG_zlib-dbg is not set
 # CONFIG_zlib-dev is not set
 
@@ -3825,8 +3825,8 @@ CONFIG_u-boot-tools=y
 #
 # Image Features
 #
-CONFIG_imagefeature-ssh-server-dropbear=y
-# CONFIG_imagefeature-ssh-server-openssh is not set
+# CONFIG_imagefeature-ssh-server-dropbear is not set
+CONFIG_imagefeature-ssh-server-openssh=y
 CONFIG_imagefeature-hwcodecs=y
 # CONFIG_imagefeature-package-management is not set
 # CONFIG_imagefeature-debug-tweaks is not set
@@ -3846,7 +3846,7 @@ CONFIG_epxcore=y
 #
 # PetaLinux RootFS Settings
 #
-CONFIG_ADD_EXTRA_USERS="root:!q2w3e4-r5;petalinux:1q2w3e4r"
+CONFIG_ADD_EXTRA_USERS="root:root;petalinux:1q2w3e4r;"
 CONFIG_CREATE_NEW_GROUPS="aie;"
 CONFIG_ADD_USERS_TO_GROUPS="petalinux:audio,video,aie,input;"
 CONFIG_ADD_USERS_TO_SUDOERS="petalinux"

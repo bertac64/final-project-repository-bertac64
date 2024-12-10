@@ -25,7 +25,7 @@
 
 #include "libep.h"
 
-#define PROT_EOL		"\r\n"	/* EOL per il protocollo di controllo */
+#define PROT_EOL		"\r\n"	/* EOL for the control protocol */
 
 char *strmem(const char *str)
 {
@@ -65,14 +65,14 @@ int file_size(const char *filename, off_t *size)
 
 /******************************************************************************/
 /**
- * DESCRIZIONE
- *		Ascii protocol get: recupera una linea di protocollo completa dal
- *		buffer interno.
- *		Lavora con proto_add (cfr.)
- *
- * VALORI DI RITORNO
- *		Numero di caratteri letti; 0 se non c'e' un buffer completo;
- *		-1 per errore.
+ * DESCRIPTION
+* Ascii protocol get: retrieves a complete protocol line from the
+* internal buffer.
+* Works with proto_add (cf.)
+*
+* RETURN VALUES
+* Number of characters read; 0 if there is no complete buffer;
+* -1 for error.
  */
 ssize_t proto_get(t_proto *p, char *buffer, size_t nbuffer)
 {
@@ -100,14 +100,13 @@ ssize_t proto_get(t_proto *p, char *buffer, size_t nbuffer)
 }
 
 /**
- * DESCRIZIONE
- *		Ascii protocol add: aggiunge un chunk al buffer interno di protocollo
- *		interno.
- *		Lavora con proto_get (cfr.)
- *
- * VALORI DI RITORNO
- *		Numero di caratteri aggiunti; -1 per errore.
- */
+* DESCRIPTION
+* Ascii protocol add: adds a chunk to the internal protocol buffer.
+* * Works with proto_get (cf.)
+*
+* RETURN VALUES
+* Number of characters added; -1 for error.
+*/
 ssize_t proto_add(t_proto *p, const void *chunk, size_t nchunk)
 {
 	if (p->nb + nchunk >=  sizeof(p->b))
@@ -123,7 +122,7 @@ ssize_t proto_add(t_proto *p, const void *chunk, size_t nchunk)
 /******************************************************************************/
 
 /*
- * MAPPA
+ * MAP
  */
 #define MAXMAP	1024
 
@@ -153,7 +152,7 @@ void map_dispose(t_map *pm)
 	}
 }
 
-// Aggiunge un item alla mappa (uso interno)
+// Add an item to the map (internal usage)
 static int map_iadd(t_map *pm, const char *key, const char *val)
 {
 	int j;
@@ -167,7 +166,7 @@ static int map_iadd(t_map *pm, const char *key, const char *val)
 	return 0;
 }
 
-// Trova un nodo nella hash (uso interno)
+// find a node into the hash (internal use)
 static t_map * map_iget(t_map *pm, const char *key)
 {
 	while (pm->key != NULL) {
@@ -178,7 +177,7 @@ static t_map * map_iget(t_map *pm, const char *key)
 	return NULL;
 }
 
-// Itera sulla hash
+// Iterating on the hash
 t_map * map_next(t_map *pm, int *status)
 {
 	if (pm[(*status)].key == NULL)
@@ -187,8 +186,8 @@ t_map * map_next(t_map *pm, int *status)
 		return &(pm[(*status)++]);
 }
 
-// Trova un nodo nella hash; torna booleano (0=non c'e`, 1=c'e`)
-// se key c'e` e val != NULL, torna il valore.
+// Find a node in the hash; return boolean (0=not there, 1=there)
+// if key is there and val != NULL, return the value.
 int map_get(t_map *pm, const char *key, char *val, size_t maxval)
 {
 	t_map *p = map_iget(pm, key);
@@ -202,10 +201,10 @@ int map_get(t_map *pm, const char *key, char *val, size_t maxval)
 	return 1;
 }
 
-// Funzione di utilita`: torna un puntatore al valore o al default specificato.
-// Utile da usare al volo, perche' non ritorna mai NULL.
-// ATTENZIONE: il puntatore e` parte della struttura di t_map: se
-// la mappa viene modificata dinamicamente, il puntatore viene perso.
+// Utility function: returns a pointer to the specified value or default.
+// Useful to use on the fly, because it never returns NULL.
+// WARNING: the pointer is part of the t_map structure: if
+// the map is dynamically modified, the pointer is lost.
 const char *map_getS(t_map *pm, const char *key, const char *dflt)
 {
 	t_map *p = map_iget(pm, key);
@@ -215,9 +214,9 @@ const char *map_getS(t_map *pm, const char *key, const char *dflt)
 	return p->val;
 }
 
-// Funzione di utilita`: torna il valore numerico della chiave specificata o
-// il default.
-// Utile da usare al volo, perche' non ritorna mai errore.
+// Utility function: returns the numeric value of the specified key or
+// the default.
+// Useful to use on the fly, because it never returns an error.
 int map_getN(t_map *pm, const char *key, int dflt)
 {
 	t_map *p = map_iget(pm, key);
@@ -227,7 +226,7 @@ int map_getN(t_map *pm, const char *key, int dflt)
 	return atoi(p->val);
 }
 
-// aggiorna/aggiunge un nodo alla hash; torna 0 per successo, !0 altrimenti.
+// update/add a node to the hash; returns 0 for success, !0 otherwise.
 int map_set(t_map *pm, const char *key, const char *val)
 {
 	t_map *p = map_iget(pm, key);
@@ -242,28 +241,28 @@ int map_set(t_map *pm, const char *key, const char *val)
 
 /*****************************************************************************/
 /*
- * Modulo per la conversione ed espansione dei messaggi da server;
- */
+* Module for converting and expanding messages from server;
+*/
 
 /*
- * DESCRIZIONE
- * 	Data una stringa con token del tipo $n=xxxx; li mette nella tabella passata
- * 	se n > 0 e n <= maxlist;
- *
- * VALORI DI RITORNO
- * 	La dimensione massima della tabella; da passare a free_tokens() (cfr).
- */
+* DESCRIPTION
+* Given a string with tokens like $n=xxxx; puts them in the passed table
+* if n > 0 and n <= maxlist;
+*
+* RETURN VALUES
+* The maximum size of the table; to be passed to free_tokens() (cfr).
+*/
 static size_t get_tokens(const char *p,
 					  char **list,
 					  size_t maxlist)
 {
 	size_t j, n;
 
-	/* Azzera la lista */
+	/* clear the list */
 	for (j = 0; j < maxlist; j++)
 		list[j] = NULL;
 
-	/* Riempi gli slot */
+	/* filling slots */
 	n = 0;
 	while ((p = strchr(p, '$')) != NULL)  {
 		p++;
@@ -284,14 +283,14 @@ static size_t get_tokens(const char *p,
 }
 
 /*
- * DESCRIZIONE
- * 	Dealloca la tabella greata da get_tokens(); cfr. per i parametri.
+ * DESCRIPTION
+ * Deallocate the greata table from get_tokens(); see for the parameters.
  */
 static void free_tokens(char **list, size_t n)
 {
 	size_t j;
 
-	/* rilascia la lista */
+	/* free the list */
 	for (j = 0; j < n; j++) {
 		free(list[j]);
 		list[j] = NULL;
@@ -299,11 +298,11 @@ static void free_tokens(char **list, size_t n)
 }
 
 /*
- * DESCRIZIONE
- * 	Data una stringa con placeholders del tipo "$n" e una tabella creata con get_tokens()
- * 	(cfr.), sostituisce le occorrenze dei token validi con quelli trovati nella tabella.
- * 	Se un token non viene trovato, il placeholder viene lasciato intatto.
- */
+* DESCRIPTION
+* Given a string with placeholders of type "$n" and a table created with get_tokens()
+* (cf.), replaces occurrences of valid tokens with those found in the table.
+* If a token is not found, the placeholder is left intact.
+*/
 
 void substitute_tokens(char *dest_buffer,
 					   size_t dest_size,
@@ -347,14 +346,14 @@ static int get_translation(t_map *p_map,
 	char key[16];
 	sprintf(key, "%03d", errcod);
 	if (!map_get(p_map, key, buffer, buffer_size)) {
-		/* Non hai trovato: cerca il default */
+		/* not found: find the default */
 		strcpy(key, "default");
 		if (!map_get(p_map, key, buffer, buffer_size)) {
-			/* Non hai trovato: fine */
+			/* Not found: end */
 			return 0;
 		}
 
-		/* Hai trovato: componi */
+		/* found it: compose */
 		char tmps[16];
 		snprintf(tmps, sizeof(tmps), " (%03d)", errcod);
 		strcat(buffer, tmps);
@@ -385,24 +384,24 @@ void test_tokens(char *dest,
 #endif /* TEST_AND_DEBUG */
 
 /*
- * DESCRIZIONE
- *	Viene passata la stringa iniziante per !Wn, -KO o *KO;
- *	viene cercato il codice di errore nella mappa passata; se viene trovato
- *	si prende la stringa e si sostituiscono tutti i token; se non viene trovato, viene
- *	tornato il contenuto della chiave 999 (internal error (nnn)).
- *	Torna anche il warning level (se e` una stringa -KO, ci mette -1), un booleano
- *	per segnalare se la stringa va sovrascritta e il codice di errore.
- *	Se questi dati non interessano, si puo` passare NULL.
- * VALORI DI RITORNO
- * 	Puntatore al buffer riempito o NULL in caso di errore.
- */
-char * translateMessage(t_map *p_map,			/* Mappa con le traduzioni */
-						const char *from_server,/* Messaggio da server */
-						char *dest_buffer,		/* Buffer destinazione */
-						size_t dest_size,		/* Dimensioni del medesimo */
-						int *warning_level,		/* Livello di warning del !W (o NULL) */
-						int *overwrite,			/* Se deve essere sovrascritto (o NULL)*/
-						int *errorcode			/* Codice di errore */)
+* DESCRIPTION
+* The string starting with !Wn, -KO or *KO is passed;
+* the error code is searched in the passed map; if it is found,
+* the string is taken and all the tokens are replaced; if it is not found, the
+* content of the key 999 (internal error (nnn)) is returned.
+* The warning level is also returned (if it is a -KO string, it sets it to -1), a boolean
+* to indicate whether the string should be overwritten and the error code.
+* If this data is not of interest, NULL can be passed.
+* RETURN VALUES
+* Pointer to the filled buffer or NULL in case of error.
+*/
+char * translateMessage(t_map *p_map,			/* Map with translations */
+						const char *from_server,/* Server Messagge */
+						char *dest_buffer,		/* Destination Buffer */
+						size_t dest_size,		/* Buffer Dimension */
+						int *warning_level,		/* Warning Level !W (o NULL) */
+						int *overwrite,			/* if it has to be overwritten (o NULL)*/
+						int *errorcode			/* Error Code */)
 {
 	/* Sanity checks */
 	if (p_map == NULL)
@@ -412,10 +411,10 @@ char * translateMessage(t_map *p_map,			/* Mappa con le traduzioni */
 	if (dest_buffer == NULL || dest_size == 0)
 		return NULL;
 
-	/* In ogni caso caso (!Wn,-KO, *KO) salta i primi 4 */
+	/* in any case (!Wn,-KO, *KO) skip the first 4 */
 	const char *p = &from_server[3];
 
-	/* Testa per "overwrite" */
+	/* Test to "overwrite" */
 	if (*p == '+') {
 		if (overwrite != NULL)
 			*overwrite = 1;
@@ -426,13 +425,13 @@ char * translateMessage(t_map *p_map,			/* Mappa con le traduzioni */
 			*overwrite = 0;
 	}
 
-	/* recupera il warning level */
+	/* recover the warning level */
 	if (warning_level != NULL) {
 		if (sscanf(from_server, "!W%d", warning_level) != 1)
 			*warning_level = -1;
 	}
 
-	/* Recupera il codice di messaggio/errore */
+	/* Recover the code ot the messagge/error */
 	int errcod;
 	if (sscanf(p, "%d", &errcod) != 1)
 		return NULL;
@@ -440,37 +439,37 @@ char * translateMessage(t_map *p_map,			/* Mappa con le traduzioni */
 	if (errorcode != NULL)
 		*errorcode = errcod;
 
-	/* Recupera la traduzione */
+	/* Translation recovery */
 	char buffer[4096];
 	if (!get_translation(p_map, errcod, buffer, sizeof(buffer)))
 		return NULL;
 
-	/* Hai trovato: recupera i primi 8 token dal messaggio del server */
+	/* found it: recover the first 8 token from server messagge */
 	char *list[8];
 	size_t n = get_tokens(p, list, 8);
 
-	/* Sostituisci */
+	/* Replace */
 	substitute_tokens(dest_buffer, dest_size, buffer, list, n);
 
-	/* finito */
+	/* finished */
 	free_tokens(list, n);
 	return dest_buffer;
 }
 
 /*
- * DESCRIZIONE
- *	Viene passato un codice di errore e una stringa con i valori ("$1=x; ...")
- *	viene cercato il codice di errore nella mappa passata; se viene trovato
- *	si prende la stringa e si sostituiscono tutti i token; se non viene trovato,
- *	viene tornato il contenuto della chiave "default" (internal error (nnn)).
- * VALORI DI RITORNO
- * 	Puntatore al buffer riempito o NULL in caso di errore.
- */
-char * translateInternalMsg(t_map *p_map,		/* Mappa con le traduzioni */
-							int errcod,			/* Codice di errore da cercare */
-							const char *fields,	/* lista dei campi (can be "" or NULL) */
-							char *dest_buffer,	/* Buffer destinazione */
-							size_t dest_size	/* Dimensioni del medesimo */)
+* DESCRIPTION
+* An error code and a string with values ​​("$1=x; ...") are passed
+* the error code is searched in the passed map; if it is found,
+* the string is taken and all tokens are replaced; if it is not found,
+* the content of the "default" key is returned (internal error (nnn)).
+* RETURN VALUES
+* Pointer to the filled buffer or NULL in case of error.
+*/
+char * translateInternalMsg(t_map *p_map,		/* Map with translations */
+							int errcod,			/* Error Code to be found */
+							const char *fields,	/* field list (can be "" or NULL) */
+							char *dest_buffer,	/* Destination Buffer */
+							size_t dest_size	/* Buffer Dimension */)
 {
 	/* Sanity checks */
 	if (p_map == NULL)
@@ -478,19 +477,19 @@ char * translateInternalMsg(t_map *p_map,		/* Mappa con le traduzioni */
 	if (dest_buffer == NULL || dest_size == 0)
 		return NULL;
 
-	/* recupera la traduzione */
+	/* Translation recovery */
 	char buffer[4096];
 	if (!get_translation(p_map, errcod, buffer, sizeof(buffer)))
 		return NULL;
 
-	/* Hai trovato */
+	/* found it */
 	if (fields != NULL) {
-		/* recupera i primi 8 token dalla lista */
+		/* recover the first 8 token from the list */
 
 		char *list[8];
 		size_t n = get_tokens(fields, list, 8);
 
-		/* Sostituisci */
+		/* replace */
 		substitute_tokens(dest_buffer, dest_size, buffer, list, n);
 		free_tokens(list, n);
 	}
@@ -499,21 +498,21 @@ char * translateInternalMsg(t_map *p_map,		/* Mappa con le traduzioni */
 		dest_buffer[dest_size-1] = 0;
 	}
 
-	/* finito */
+	/* finished */
 	return dest_buffer;
 }
 
 
 /****************************************************************************/
-/** Cronometro */
+/** stopwatch */
 
 struct timeval S_tv;
 
 /**
- *	DESCRIZIONE
- * 		Fa partire il cronometro.
- *	NOTE
- *		Non e` thread-safe
+ * DESCRIPTION
+* Starts the stopwatch.
+* NOTE
+* Not thread-safe
  */
 void chrono_start(void)
 {
@@ -521,10 +520,10 @@ void chrono_start(void)
 }
 
 /**
- *	DESCRIZIONE
- * 		ferma il cronometro e torna l'elapsed in ms.
- *	NOTE
- *		Non e` thread-safe
+ * DESCRIPTION
+* stops the timer and returns the elapsed in ms.
+* NOTE
+* It is not thread-safe
  */
 int chrono_stop(void)
 {
@@ -540,13 +539,12 @@ int chrono_stop(void)
 
 
 /****************************************************************************/
-/** Identificazione piattaforma */
+/** Platform Identification */
 
 /**
- *	DESCRIZIONE
- * 		Fa partire il cronometro.
- *	NOTE
- *		Non e` thread-safe
+ *	DESCRIPTION
+ * 		Checks the cpu type.
+ *
  */
 const char * get_cputype(char *buffer)
 {

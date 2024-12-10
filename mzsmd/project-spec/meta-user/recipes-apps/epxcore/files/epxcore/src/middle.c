@@ -30,22 +30,10 @@
 
 
 /**
- *	DESCRIZIONE
- *		Resetta il watchdog; va chiamato il piu' frequentemente possibile.
- */
-void reset_watchdog(void)
-{
-#ifndef SIMULAZIONE
-	if (fpga_poke((fpga_addr_t)r_Command, FC_WATCHDOG) != 0)
-		comm_error("Can't reset watchdog");
-#endif
-}
-
-/**
- *	DESCRIZIONE
- *		Resetta l'hardware
- *	VALORI DI RITORNO
- *		0 per successo, -1 + log per errore.
+ *	DESCRIPTION
+ *		Hardware reset
+ *	RETURN VALUES
+ *		0 on success, -1 error.
  */
 int reset_hardware(void)
 {
@@ -69,10 +57,10 @@ int reset_hardware(void)
 }
 
 /**
- *	DESCRIZIONE
- *		Inizializza l'hardware e lo predispone al funzionamento di regime.
- *	VALORI DI RITORNO
- *		0 per successo, -1 + log per errore.
+ *	DESCRIPTION
+ *		Hardware intialization
+ *	RETURN VALUES
+ *		0 on success, -1 error.
  */
 int init_hardware(void)
 {
@@ -82,57 +70,34 @@ int init_hardware(void)
 
 
 /*
- * DESCRIZIONE
- * 	Inizializza la parte di potenza.
+ * DESCRIPTION
+ * 	Power Unit initialòization.
  *
- * VALORI DI RITORNO
- * 	0 per successo, -1 per fallimento.
+ *	RETURN VALUES
+ *		0 on success, -1 error.
  */
-int start_power(int32_t mode	/* Modo di invocazione (TRUE = in bite) */)
+int start_power(int32_t mode)
 {
 
 	(void)mode;
 
-	reset_watchdog();
+	//reset_watchdog();
 
-	/* Verifica il registro di stato della FPGA */
-	int state, try;
+	/* Verification of the FPGA status register*/
+	int state;
 
 	if ((state = fpga_peek(r_State)) == -1) {
 		comm_error("Can't get FPGA state");
 		return -1;
 	}
-
-	try = 0;
-	while (state == 0x0000) {
-
-		if (try++ >= 3){
-			log_error("Wrong FPGA state (0000).");
-			return -1;
-		}
-
-		log_warning("Problems in FPGA init: trying again");
-
-
-		msleep(1000);
-
-		if ((state = fpga_peek(r_State)) == -1) {
-			comm_error("Can't get FPGA state");
-			return -1;
-		}
-
-		msleep(500);
-	}
-
-	reset_watchdog();
-
+	
 	return 0;
 }
 
 
 /**
- * DESCRIZIONE
- * 	Fai un log completo con lo stato.
+ * DESCRIPTION
+ * 	Complete log with status.
  */
 
 int32_t explain_error(const char *msg)
