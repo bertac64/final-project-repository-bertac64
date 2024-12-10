@@ -45,7 +45,7 @@
 #include "middle.h"
 
 #define ECG_TRIGGER_CHECK
-#define SYS_TIDLE = 172800
+#define SYS_TIDLE 172800
 
 /* ========================================================================= */
 /* Global variables */
@@ -178,7 +178,17 @@ int main(int argc, char **argv)
 	epsmdrv_open();
 	stato_init();
 	init_timer();
-
+	/* open the error log file */
+	FILE *fp_errFile;
+	if ((fp_errFile=fopen("/home/root/epxcore.err", "a"))==NULL){
+		char s[MAXSTR];
+		sprintf(s, "Can't open file %s", "/home/root/epxcore.err");
+		log_perror(s);
+	}else{
+		log_addout(fp_errFile, e_log_info);
+		log_info("*** %s (%s %s ): program started", argv[0], __DATE__, __TIME__);
+	}
+	
 	/* Initialization of shared variables (status, ...) */
 	initSharedVar();
 
@@ -650,47 +660,23 @@ void * eval_state(void *par)
 		enum e_state s = get_state();
 
 		if (s != e_idle) {
+			(void)set_state(e_ready);
 			if (!noFPGA){
-				do{
 					state = fpga_peek(r_State);				//read fpga state register
 					if (state == -1){
 						comm_error("Can't get FPGA State");
-						continue;
+						return -1;
 					}else{
 						fpga_state = (state & 0x0000FFFF);
+						state = fpga_peek(r_State2);				//read fpga state2 register
 						fpga_state2 = (state>>16);
 					}
 					alrm = fpga_peek(r_Alarm);				//read fpga alarm register
 					if (alrm == -1) {
 						comm_error("Can't get FPGA Alarm");
-						continue;
+						return -1;
 					}else
 						fpga_alarm = alrm;
-
-					if (imp_count > 3){
-						imp_count = 0;
-						msleep(1000);
-						(void)set_state(e_ready);
-						break;
-					}
-					else
-					{
-						if (fpga_state == fpga_alarm && fpga_state == fpga_state2){
-							comm_error("FPGA clock freezed. Trying to recover it.");
-							imp_count ++;
-							msleep(100);
-						}
-					}
-				}while(fpga_state == fpga_alarm && fpga_state == fpga_state2);
-
-				if ((fpga_old_state != fpga_state ||
-					 fpga_old_state2 != fpga_state2 ||
-					 fpga_old_alarm != fpga_alarm)) {
-					nb = sprintf(buffer, "State=%04X State2=%04X Alarm=%04X", fpga_state, fpga_state2, fpga_alarm);
-					write2mainAll(buffer, nb);
-				}
-			}else{
-				(void)set_state(e_ready);
 			}
 			
 			/* status calculation **************************************** */

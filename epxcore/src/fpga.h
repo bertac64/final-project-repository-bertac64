@@ -20,15 +20,17 @@ typedef uint64_t fpga_addr_t;	// Addresses
 /* registers address*/
 #define r_Command		0x00000000	//IO
 #define r_Gpr1			0x00000001	//IO
-#define r_Version		0x00000006	//IO
 #define r_State			0x00000008	//O
 #define r_Alarm			0x00000009	//O
+#define r_State2		0x00000026	//O
+#define r_Version		0x0000007F	//O
+
 
 
 // Pattern e masks for the status calculation
 #define MASK_ALL	0xFFFF
 #define MASK_READY	0xFFFF
-#define PATT_READY	0x1800
+#define PATT_READY	0x0000
 
 
 /*****************************************************************************/

@@ -73,14 +73,18 @@ static t_cmd S_command[] = {
 
 	// Comandi ad uso debug
 	{ "poke",	2, FALSE,	1,	fCmd_poke,	NULL },
+	{ "po",		2, FALSE,	1,	fCmd_poke,	NULL },		// Sinonimo di "poke"
 	{ "peek",	1, FALSE,	0,	fCmd_peek,	NULL },
+	{ "pe",		1, FALSE,	0,	fCmd_peek,	NULL },		// Sinonimo di "peek"
 	{ "read",	2, FALSE,	1,	fCmd_read,	NULL },
 	{ "write",	-1,FALSE,	1,	fCmd_write,	NULL },		// N. variabile di pars
 	{ "fill",	2, FALSE,	1,	fCmd_fill,	NULL },
 	
 	{ "idle",	0, FALSE,	1,	fCmd_idle,	NULL },
+	{ "i",		0, FALSE,	1,	fCmd_idle,	NULL },		// sinonimo di idle
 	{ "abort",	0, FALSE,	1,	fCmd_abort,	NULL },
-	
+	{ "a",		0, FALSE,	1,	fCmd_abort,	NULL },		// sinonimo di "abort"
+
 	{ "hwreset",	0, FALSE,	0,	fCmd_hwreset,	NULL },
 
 	{ NULL,		0, FALSE,	0,	NULL,		NULL }		/* tappo */
